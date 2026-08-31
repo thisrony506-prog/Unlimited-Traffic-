@@ -318,9 +318,9 @@ async function startServer() {
 
   // --- API ROUTE: CLAIM MONETAG AD REWARD IN MINI APP ---
   app.post('/api/miniapp/claim-ad-reward', (req, res) => {
-    const { telegramId, adType } = req.body;
-    const tId直 = parseInt(telegramId, 10);
-    const tId = isNaN(tId直) ? 88776655 : tId直;
+    const { telegramId, adType, eventId } = req.body;
+    const tIdParsed = parseInt(telegramId, 10);
+    const tId = isNaN(tIdParsed) ? 88776655 : tIdParsed;
 
     // Ensure user exists
     let user = db.getUser(tId);
@@ -329,7 +329,7 @@ async function startServer() {
       user = resUser.user;
     }
 
-    const claimRes = db.claimMonetagAdReward(tId, adType || 'rewarded_interstitial');
+    const claimRes = db.claimMonetagAdReward(tId, adType || 'rewarded_interstitial', eventId);
     if (!claimRes.success) {
       res.status(400).json({
         success: false,
@@ -345,7 +345,7 @@ async function startServer() {
       newBalance: claimRes.newBalance,
       adsWatchedToday: claimRes.adsWatchedToday,
       remainingToday: claimRes.remainingToday,
-      message: `🎉 +${claimRes.amount} Credits awarded!`,
+      message: 'Reward added successfully',
     });
   });
 

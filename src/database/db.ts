@@ -530,6 +530,9 @@ class DatabaseService {
   }
 
   // --- MONETAG ADS MINI APP REWARDS ---
+  private processedAdEvents: Set<string> = new Set<string>();
+  private userLastAdClaimTime: Record<number, number> = {};
+
   public getMonetagStats(userId: number): {
     adsWatchedToday: number;
     dailyLimit: number;
@@ -566,7 +569,7 @@ class DatabaseService {
   public claimMonetagAdReward(
     userId: number,
     adType: string = 'rewarded_interstitial',
-    rewardAmount?: number
+    eventId?: string
   ): {
     success: boolean;
     amount?: number;
@@ -578,6 +581,20 @@ class DatabaseService {
     const user = this.memoryDb.users[userId.toString()];
     if (!user) return { success: false, error: 'User not found' };
 
+    // Anti-Abuse 1: Check duplicate Event ID
+    if (eventId) {
+      if (this.processedAdEvents.has(eventId)) {
+        return { success: false, error: 'Duplicate reward request. This ad completion was already credited.' };
+      }
+    }
+
+    // Anti-Abuse 2: Rate limit check (minimum 2 seconds between ad claim requests per user)
+    const now = Date.now();
+    const lastClaim = this.userLastAdClaimTime[userId] || 0;
+    if (now - lastClaim < 2000) {
+      return { success: false, error: 'Please wait before claiming another ad reward.' };
+    }
+
     const stats = this.getMonetagStats(userId);
     if (stats.remainingToday <= 0) {
       return {
@@ -588,13 +605,19 @@ class DatabaseService {
       };
     }
 
-    const reward = rewardAmount ?? stats.rewardPerAd;
+    // Server-enforced reward amount (never trust client-supplied amount)
+    const reward = config.MONETAG_REWARD_CREDITS || 5;
     user.balance += reward;
     user.totalEarned += reward;
 
+    if (eventId) {
+      this.processedAdEvents.add(eventId);
+    }
+    this.userLastAdClaimTime[userId] = now;
+
     const adTypeLabel =
       adType === 'rewarded_interstitial'
-        ? '🎬 Rewarded Interstitial'
+        ? '🎬 Rewarded Interstitial (Zone 11696929)'
         : adType === 'in_page_push'
         ? '💎 In-Page Ad'
         : adType === 'smartlink'

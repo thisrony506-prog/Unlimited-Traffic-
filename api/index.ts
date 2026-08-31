@@ -180,7 +180,7 @@ app.get('/api/miniapp/user/:telegramId', (req, res) => {
 
 // 8. Claim Monetag Ad Reward
 app.post('/api/miniapp/claim-ad-reward', (req, res) => {
-  const { telegramId, adType } = req.body;
+  const { telegramId, adType, eventId } = req.body;
   const tIdParsed = parseInt(telegramId, 10);
   const tId = isNaN(tIdParsed) ? 88776655 : tIdParsed;
 
@@ -190,7 +190,7 @@ app.post('/api/miniapp/claim-ad-reward', (req, res) => {
     user = resUser.user;
   }
 
-  const claimRes = db.claimMonetagAdReward(tId, adType || 'rewarded_interstitial');
+  const claimRes = db.claimMonetagAdReward(tId, adType || 'rewarded_interstitial', eventId);
   if (!claimRes.success) {
     res.status(400).json({
       success: false,
@@ -206,7 +206,7 @@ app.post('/api/miniapp/claim-ad-reward', (req, res) => {
     newBalance: claimRes.newBalance,
     adsWatchedToday: claimRes.adsWatchedToday,
     remainingToday: claimRes.remainingToday,
-    message: `🎉 +${claimRes.amount} Credits awarded!`,
+    message: 'Reward added successfully',
   });
 });
 
