@@ -42,7 +42,21 @@ export function clearCapturedResponses() {
 
 export function createTelegramBot(): Bot {
   const token = config.TELEGRAM_BOT_TOKEN;
-  const bot = new Bot(token);
+  const bot = new Bot(token, {
+    botInfo: {
+      id: 8864392110,
+      is_bot: true,
+      first_name: 'EarnFlow Bot',
+      username: config.BOT_USERNAME || 'earnflowV3_bot',
+      can_join_groups: true,
+      can_read_all_group_messages: false,
+      supports_inline_queries: false,
+      can_connect_to_business: false,
+      has_main_web_app: false,
+      has_topics_enabled: false,
+      allows_users_to_create_topics: false,
+    } as any,
+  });
 
   // Install API transformer to intercept outgoing Telegram API calls
   bot.api.config.use(async (prev, method, payload, signal) => {

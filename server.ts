@@ -14,6 +14,7 @@ async function startServer() {
 
   // Initialize GrammY bot
   const bot = createTelegramBot();
+  bot.init().catch(() => {});
 
   // Telegram Webhook Handler Route
   const webhookPath = `/telegram/webhook`;
