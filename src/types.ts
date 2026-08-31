@@ -1,91 +1,77 @@
 export type UserStatus = 'active' | 'suspended' | 'banned';
 
 export interface User {
+  userId: string;
   telegramId: number;
-  username?: string;
   firstName: string;
   lastName?: string;
+  username?: string;
+  balance: number; // Available Credits
   referralCode: string;
   referredBy?: number;
-  balance: number; // Available Balance in ৳
-  totalEarned: number; // Total Earned in ৳
-  totalWithdrawn: number; // Total Withdrawn in ৳
-  pendingWithdrawal: number; // Pending Withdrawal in ৳
-  completedTasks: number;
-  totalReferrals: number;
-  successfulReferrals: number;
+  totalEarned: number; // Total Credits earned
+  totalSpent: number; // Total Credits spent
+  trafficReceived: number; // Visits received on user's campaigns
+  trafficProvided: number; // Visits completed by user
+  referralCount: number;
   referralEarnings: number;
+  lastDailyBonus?: string; // ISO date of last claim
   status: UserStatus;
   createdAt: string;
+  lastActiveAt: string;
+  firstActionCompleted?: boolean; // Required for referral qualification
+}
+
+export type CampaignStatus = 'PENDING' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+
+export interface Campaign {
+  campaignId: string;
+  ownerUserId: number; // Telegram ID of creator
+  ownerName: string;
+  websiteUrl: string;
+  requiredVisits: number;
+  completedVisits: number;
+  remainingVisits: number;
+  cost: number; // Credits spent
+  minimumVisitSeconds: number; // Time user must stay (e.g. 20s)
+  rewardPerVisit: number; // Credits rewarded per visit (default: 1)
+  status: CampaignStatus;
+  createdAt: string;
   updatedAt: string;
 }
 
-export type TaskStatus = 'draft' | 'published' | 'paused' | 'expired' | 'completed';
-export type ProofType = 'text' | 'photo' | 'document' | 'none';
+export type VisitStatus = 'started' | 'verified' | 'failed' | 'expired';
 
-export interface Task {
-  taskId: string;
-  title: string;
-  description: string;
-  instructions: string;
-  reward: number; // in ৳
-  estimatedTime: string; // e.g. "2 minutes"
-  requirements: ProofType;
-  status: TaskStatus;
-  currentSubmissions: number;
-  maximumSubmissions: number;
-  createdAt: string;
-  expiresAt: string;
-}
-
-export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
-
-export interface TaskSubmission {
-  submissionId: string;
-  taskId: string;
-  taskTitle?: string;
-  userId: number;
-  proofType: ProofType;
-  proofText?: string;
-  proofFileId?: string;
-  status: SubmissionStatus;
-  rejectionReason?: string;
-  rewarded: boolean;
+export interface CampaignVisit {
+  visitId: string;
+  campaignId: string;
+  userId: number; // Telegram ID of visitor
+  startTime: number; // Unix timestamp ms
+  durationSeconds: number; // Required duration
+  verifiedTime?: number;
+  status: VisitStatus;
+  rewardCredited: boolean;
   rewardAmount: number;
   createdAt: string;
-  updatedAt: string;
 }
 
 export type TransactionType =
-  | 'task_reward'
+  | 'signup_bonus'
+  | 'daily_bonus'
+  | 'traffic_reward'
   | 'referral_reward'
-  | 'withdrawal'
-  | 'withdrawal_refund'
-  | 'admin_adjustment';
+  | 'campaign_create'
+  | 'package_purchase'
+  | 'manual_adjustment';
 
-export interface Transaction {
+export interface CreditTransaction {
   transactionId: string;
   userId: number;
-  amount: number;
+  amount: number; // Positive for earnings, negative for spends
   type: TransactionType;
   description: string;
   status: 'completed' | 'pending' | 'failed';
   createdAt: string;
-}
-
-export type WithdrawalMethod = 'bKash' | 'Nagad';
-export type WithdrawalStatus = 'pending' | 'approved' | 'paid' | 'rejected' | 'cancelled';
-
-export interface Withdrawal {
-  withdrawalId: string;
-  userId: number;
-  amount: number;
-  method: WithdrawalMethod;
-  account: string;
-  status: WithdrawalStatus;
-  rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Referral {
@@ -95,49 +81,85 @@ export interface Referral {
   referredUsername?: string;
   referredName: string;
   rewardAmount: number;
+  status: 'pending' | 'qualified';
   rewardPaid: boolean;
   createdAt: string;
+  qualifiedAt?: string;
 }
 
-export type TicketStatus = 'open' | 'pending' | 'resolved' | 'closed';
+export interface CreditPackage {
+  packageId: string;
+  name: string;
+  credits: number;
+  price: number; // in ৳ (BDT)
+  currency: string;
+  badge: string;
+  description: string;
+}
 
-export interface SupportTicket {
-  ticketId: string;
+export type PaymentMethod = 'bKash' | 'Nagad' | 'Other';
+export type PaymentStatus = 'pending' | 'verified' | 'rejected';
+
+export interface Payment {
+  paymentId: string;
   userId: number;
-  message: string;
-  status: TicketStatus;
-  adminResponse?: string;
+  userName: string;
+  packageId: string;
+  packageName: string;
+  credits: number;
+  amount: number;
+  method: PaymentMethod;
+  reference: string;
+  trxId: string;
+  status: PaymentStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Announcement {
-  announcementId: string;
-  title: string;
-  message: string;
-  status: 'draft' | 'published' | 'archived';
-  createdAt: string;
+export interface DailyBonusClaim {
+  claimId: string;
+  userId: number;
+  amount: number;
+  claimedAt: string;
 }
 
-export interface SystemSettings {
-  minWithdrawal: number;
-  referralReward: number;
-  supportChatId: string;
-  rulesText: string;
+export type SupportTicketStatus = 'open' | 'resolved' | 'closed';
+
+export interface SupportRequest {
+  ticketId: string;
+  userId: number;
+  userName: string;
+  message: string;
+  status: SupportTicketStatus;
+  adminReply?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notification {
+  notificationId: string;
+  userId: number;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface UserSessionState {
   step:
     | 'idle'
-    | 'submitting_task_proof'
-    | 'withdraw_select_method'
-    | 'withdraw_enter_amount'
-    | 'withdraw_enter_account'
-    | 'withdraw_confirm'
-    | 'entering_support_message';
-  activeTaskId?: string;
-  withdrawMethod?: WithdrawalMethod;
-  withdrawAmount?: number;
-  withdrawAccount?: string;
-  page?: number;
+    | 'promote_enter_url'
+    | 'promote_select_visits'
+    | 'promote_confirm'
+    | 'payment_select_method'
+    | 'payment_enter_trxid'
+    | 'support_enter_message';
+  promoteUrl?: string;
+  promoteVisits?: number;
+  selectedPackage?: CreditPackage;
+  paymentMethod?: PaymentMethod;
+  activeVisitId?: string;
+  activeCampaignId?: string;
+  historyPage?: number;
+  faqPage?: number;
 }

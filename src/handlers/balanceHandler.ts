@@ -1,21 +1,18 @@
 import { Context } from 'grammy';
-import { dbService } from '../database/db';
-import { formatBalanceMessage } from '../utils/formatters';
+import { db } from '../database/db';
 import { balanceInlineKeyboard } from '../keyboards';
+import { formatBalanceScreen } from '../utils/formatters';
 import { sessionManager } from '../services/session';
 
 export const handleBalance = async (ctx: Context) => {
   if (!ctx.from) return;
-  sessionManager.clearSession(ctx.from.id);
 
-  const { user } = dbService.getOrCreateUser(
-    ctx.from.id,
-    ctx.from.first_name,
-    ctx.from.last_name,
-    ctx.from.username
-  );
+  const telegramId = ctx.from.id;
+  sessionManager.clearSession(telegramId);
 
-  const text = formatBalanceMessage(user);
+  const user = db.getUser(telegramId) || db.getOrCreateUser(telegramId, ctx.from.first_name || 'User').user;
+  const { earnedToday, spentToday } = db.getUserTodayStats(telegramId);
+  const text = formatBalanceScreen(user, earnedToday, spentToday);
 
   if (ctx.callbackQuery) {
     try {
@@ -23,7 +20,6 @@ export const handleBalance = async (ctx: Context) => {
         parse_mode: 'Markdown',
         reply_markup: balanceInlineKeyboard,
       });
-      await ctx.answerCallbackQuery();
     } catch {
       await ctx.reply(text, {
         parse_mode: 'Markdown',

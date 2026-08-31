@@ -1,48 +1,215 @@
 import { Keyboard, InlineKeyboard } from 'grammy';
 import { config } from '../config/env';
+import { CreditPackage, Campaign } from '../types';
 
 /**
- * Main Reply Keyboard available persistent across chat
+ * Main Persistent Reply Keyboard
  */
 export const mainReplyKeyboard = new Keyboard()
-  .text('💰 My Balance').text('📋 Available Tasks').row()
-  .text('✅ My Tasks').text('👥 Referral').row()
-  .text('💸 Withdraw').text('📊 History').row()
-  .text('👤 Profile').text('🎧 Support').row()
-  .text('📜 Rules')
+  .text('🌐 Get Traffic').text('➕ Promote Website').row()
+  .text('💳 Buy Credits').text('🎁 Earn Credits').row()
+  .text('👥 Referral').text('💰 My Balance').row()
+  .text('📊 Statistics').text('📜 History').row()
+  .text('🎧 Support')
   .resized();
+
+/**
+ * Main Menu Inline Keyboard
+ */
+export const mainInlineKeyboard = new InlineKeyboard()
+  .text('🌐 Get Traffic', 'nav_traffic')
+  .text('➕ Promote Website', 'nav_promote')
+  .row()
+  .text('💳 Buy Credits', 'nav_packages')
+  .text('🎁 Earn Credits', 'nav_earn')
+  .row()
+  .text('👥 Referral', 'nav_referral')
+  .text('💰 My Balance', 'nav_balance')
+  .row()
+  .text('📊 Statistics', 'nav_stats')
+  .text('📜 History', 'nav_history')
+  .row()
+  .text('🎧 Support', 'nav_support');
+
+/**
+ * Back to Main Menu button
+ */
+export const backToMainInlineKeyboard = new InlineKeyboard().text('🏠 Main Menu', 'nav_main');
+
+/**
+ * Traffic Campaign Navigation Inline Keyboard
+ */
+export const campaignViewInlineKeyboard = (campaignId: string, hasNext: boolean) => {
+  const kb = new InlineKeyboard().text('🚀 Visit Website', `visit_start_${campaignId}`).row();
+  if (hasNext) {
+    kb.text('➡️ Next Campaign', 'traffic_next').row();
+  }
+  kb.text('🔙 Back', 'nav_main');
+  return kb;
+};
+
+/**
+ * Visit Session Active Inline Keyboard
+ */
+export const visitSessionInlineKeyboard = (visitId: string, websiteUrl: string) => {
+  return new InlineKeyboard()
+    .url('🌐 Open Website', websiteUrl)
+    .row()
+    .text('✅ Verify Visit', `visit_verify_${visitId}`)
+    .row()
+    .text('❌ Cancel', 'nav_traffic');
+};
+
+/**
+ * Visit Completed Navigation
+ */
+export const visitCompletedInlineKeyboard = new InlineKeyboard()
+  .text('🌐 Next Campaign', 'nav_traffic')
+  .row()
+  .text('🏠 Main Menu', 'nav_main');
+
+/**
+ * Promote Website: Select Visits
+ */
+export const promoteVisitsInlineKeyboard = new InlineKeyboard()
+  .text('50', 'promote_visits_50')
+  .text('100', 'promote_visits_100')
+  .row()
+  .text('500', 'promote_visits_500')
+  .text('1,000', 'promote_visits_1000')
+  .row()
+  .text('5,000', 'promote_visits_5000')
+  .row()
+  .text('🔙 Back', 'nav_main');
+
+/**
+ * Promote Website: Confirm
+ */
+export const promoteConfirmInlineKeyboard = new InlineKeyboard()
+  .text('✅ Start Campaign', 'promote_confirm_yes')
+  .text('❌ Cancel', 'promote_cancel');
+
+/**
+ * Insufficient Credits Inline Keyboard
+ */
+export const insufficientCreditsInlineKeyboard = new InlineKeyboard()
+  .text('💳 Buy Credits', 'nav_packages')
+  .text('🎁 Earn Credits', 'nav_earn')
+  .row()
+  .text('🔙 Back', 'nav_main');
+
+/**
+ * My Campaigns Inline Keyboard
+ */
+export const myCampaignsInlineKeyboard = (campaigns: Campaign[]) => {
+  const kb = new InlineKeyboard();
+
+  campaigns.slice(0, 5).forEach((c) => {
+    const isPaused = c.status === 'PAUSED';
+    const toggleIcon = isPaused ? '▶️ Resume' : '⏸ Pause';
+    kb.text(`${toggleIcon} (${c.remainingVisits} left)`, `camp_toggle_${c.campaignId}`)
+      .text('📊 Details', `camp_detail_${c.campaignId}`)
+      .row();
+  });
+
+  kb.text('➕ Promote Website', 'nav_promote').row();
+  kb.text('🔙 Back', 'nav_stats');
+  return kb;
+};
+
+/**
+ * Earn Credits Hub Inline Keyboard
+ */
+export const earnCreditsInlineKeyboard = new InlineKeyboard()
+  .text('🌐 Traffic Tasks', 'nav_traffic')
+  .text('👥 Referral', 'nav_referral')
+  .row()
+  .text('🎁 Daily Bonus', 'nav_daily_bonus')
+  .row()
+  .text('🔙 Back', 'nav_main');
+
+/**
+ * Daily Bonus Claim Inline Keyboard
+ */
+export const dailyBonusInlineKeyboard = new InlineKeyboard()
+  .text('🎁 Claim Bonus', 'daily_bonus_claim')
+  .row()
+  .text('🔙 Back', 'nav_earn');
+
+/**
+ * Buy Credits Packages Inline Keyboard
+ */
+export const buyPackagesInlineKeyboard = (packages: CreditPackage[]) => {
+  const kb = new InlineKeyboard();
+  packages.forEach((pkg) => {
+    kb.text(`${pkg.badge} ${pkg.name} (${pkg.credits.toLocaleString()}) — ৳${pkg.price}`, `buy_pkg_${pkg.packageId}`).row();
+  });
+  kb.text('🔙 Back', 'nav_main');
+  return kb;
+};
+
+/**
+ * Payment Method Selection Inline Keyboard
+ */
+export const paymentMethodsInlineKeyboard = (packageId: string) => {
+  return new InlineKeyboard()
+    .text('💳 bKash', `pay_method_${packageId}_bKash`)
+    .text('💳 Nagad', `pay_method_${packageId}_Nagad`)
+    .row()
+    .text('💳 Other', `pay_method_${packageId}_Other`)
+    .row()
+    .text('🔙 Back', 'nav_packages');
+};
+
+/**
+ * Payment Instructions Inline Keyboard
+ */
+export const paymentInstructionsInlineKeyboard = new InlineKeyboard()
+  .text('✅ I Have Paid', 'pay_confirm_prompt')
+  .text('❌ Cancel', 'nav_packages');
 
 /**
  * Balance View Inline Keyboard
  */
 export const balanceInlineKeyboard = new InlineKeyboard()
-  .text('💸 Withdraw', 'nav_withdraw')
-  .text('📊 Transaction History', 'nav_history')
+  .text('💳 Buy Credits', 'nav_packages')
+  .text('🎁 Earn Credits', 'nav_earn')
   .row()
-  .text('⬅️ Main Menu', 'nav_main');
+  .text('📜 History', 'nav_history')
+  .row()
+  .text('🏠 Main Menu', 'nav_main');
 
 /**
- * Tasks View Inline Keyboards
+ * Statistics View Inline Keyboard
  */
-export const taskListInlineKeyboard = (taskId: string) => {
-  return new InlineKeyboard()
-    .text('▶️ Start Task', `task_start_${taskId}`)
-    .row();
-};
-
-export const taskDetailInlineKeyboard = (taskId: string) => {
-  return new InlineKeyboard()
-    .text('✅ Submit Task', `task_submit_${taskId}`)
-    .row()
-    .text('⬅️ Back to Tasks', 'nav_tasks');
-};
+export const statsInlineKeyboard = new InlineKeyboard()
+  .text('📊 My Campaigns', 'nav_my_campaigns')
+  .text('📜 History', 'nav_history')
+  .row()
+  .text('🏠 Main Menu', 'nav_main');
 
 /**
- * My Tasks List Navigation
+ * History Pagination Inline Keyboard
  */
-export const myTasksInlineKeyboard = new InlineKeyboard()
-  .text('📋 Available Tasks', 'nav_tasks')
-  .text('⬅️ Main Menu', 'nav_main');
+export const historyInlineKeyboard = (currentPage: number, totalPages: number) => {
+  const kb = new InlineKeyboard();
+  const buttons = [];
+
+  if (currentPage > 1) {
+    buttons.push({ text: '⬅️ Previous', callback_data: `hist_page_${currentPage - 1}` });
+  }
+  if (currentPage < totalPages) {
+    buttons.push({ text: '➡️ Next', callback_data: `hist_page_${currentPage + 1}` });
+  }
+
+  if (buttons.length > 0) {
+    buttons.forEach((b) => kb.text(b.text, b.callback_data));
+    kb.row();
+  }
+
+  kb.text('🏠 Main Menu', 'nav_main');
+  return kb;
+};
 
 /**
  * Referral View Inline Keyboard
@@ -51,59 +218,63 @@ export const referralInlineKeyboard = (referralCode: string) => {
   const botUser = config.BOT_USERNAME;
   const refLink = `https://t.me/${botUser}?start=${referralCode}`;
   const shareText = encodeURIComponent(
-    `💰 Join InfiniteHits and start earning rewards by completing simple tasks! Direct payout to bKash & Nagad.\nJoin here: ${refLink}`
+    `🚀 Join InfiniteHits and get 50 Free Credits to promote your website or earn more credits by viewing top campaigns!\nJoin here: ${refLink}`
   );
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`;
 
   return new InlineKeyboard()
-    .text('📋 Copy Referral Link', `copy_ref_${referralCode}`)
-    .url('📤 Share Referral Link', shareUrl)
+    .url('📤 Share Link', shareUrl)
     .row()
-    .text('⬅️ Main Menu', 'nav_main');
+    .text('📊 Referral Stats', 'nav_referral_stats')
+    .row()
+    .text('🔙 Back', 'nav_main');
 };
 
 /**
- * Withdrawal Method Selection Inline Keyboard
+ * Profile View Inline Keyboard
  */
-export const withdrawalMethodsInlineKeyboard = new InlineKeyboard()
-  .text('bKash', 'wdr_method_bKash')
-  .text('Nagad', 'wdr_method_Nagad')
+export const profileInlineKeyboard = new InlineKeyboard()
+  .text('💰 My Balance', 'nav_balance')
+  .text('📊 Statistics', 'nav_stats')
   .row()
-  .text('⬅️ Cancel', 'nav_main');
-
-/**
- * Withdrawal Confirmation Inline Keyboard
- */
-export const withdrawalConfirmInlineKeyboard = new InlineKeyboard()
-  .text('✅ Confirm', 'wdr_confirm_yes')
-  .text('❌ Cancel', 'wdr_cancel')
-  .row();
-
-/**
- * History Pagination Inline Keyboard
- */
-export const historyPaginationInlineKeyboard = (currentPage: number, totalPages: number) => {
-  const kb = new InlineKeyboard();
-  if (currentPage > 1) {
-    kb.text('⬅️ Previous', `hist_page_${currentPage - 1}`);
-  }
-  if (currentPage < totalPages) {
-    kb.text('Next ➡️', `hist_page_${currentPage + 1}`);
-  }
-  kb.row().text('⬅️ Main Menu', 'nav_main');
-  return kb;
-};
+  .text('🏠 Main Menu', 'nav_main');
 
 /**
  * Support View Inline Keyboard
  */
-export const supportInlineKeyboard = new InlineKeyboard()
-  .text('📩 Contact Support', 'support_contact')
-  .text('❓ FAQ', 'support_faq')
-  .row()
-  .text('⬅️ Main Menu', 'nav_main');
+export const supportInlineKeyboard = () => {
+  const kb = new InlineKeyboard();
+  const supportUser = config.SUPPORT_USERNAME;
+
+  if (supportUser) {
+    kb.url('💬 Contact Support', `https://t.me/${supportUser}`).row();
+  } else {
+    kb.text('💬 Contact Support', 'support_contact_msg').row();
+  }
+
+  kb.text('❓ FAQ', 'support_faq_list')
+    .row()
+    .text('🏠 Main Menu', 'nav_main');
+
+  return kb;
+};
 
 /**
- * Standard Back to Main Menu Button
+ * FAQ List Inline Keyboard
  */
-export const backToMainInlineKeyboard = new InlineKeyboard().text('⬅️ Main Menu', 'nav_main');
+export const faqListInlineKeyboard = (questions: { id: string; title: string }[]) => {
+  const kb = new InlineKeyboard();
+  questions.forEach((q) => {
+    kb.text(q.title, `faq_item_${q.id}`).row();
+  });
+  kb.text('🔙 Back', 'nav_support');
+  return kb;
+};
+
+/**
+ * FAQ Single Answer Inline Keyboard
+ */
+export const faqItemInlineKeyboard = new InlineKeyboard()
+  .text('❓ All FAQs', 'support_faq_list')
+  .row()
+  .text('🏠 Main Menu', 'nav_main');

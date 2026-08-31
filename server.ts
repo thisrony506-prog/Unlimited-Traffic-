@@ -4,7 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import { webhookCallback } from 'grammy';
 import { createTelegramBot, clearCapturedResponses, capturedResponses } from './src/bot/bot';
 import { config } from './src/config/env';
-import { dbService } from './src/database/db';
+import { db } from './src/database/db';
 
 async function startServer() {
   const app = express();
@@ -16,10 +16,20 @@ async function startServer() {
   const bot = createTelegramBot();
   bot.init().catch(() => {});
 
-  // Telegram Webhook Handler Route
-  const webhookPath = `/telegram/webhook`;
+  // Real Telegram Webhook Handler Route
+  const webhookPath = `/api/telegram/webhook`;
   app.post(webhookPath, (req, res) => {
-    // Check webhook secret token if configured
+    // Validate secret token if configured
+    const secret = req.headers['x-telegram-bot-api-secret-token'];
+    if (config.WEBHOOK_SECRET && secret && secret !== config.WEBHOOK_SECRET) {
+      res.status(403).send('Forbidden: Invalid webhook secret token');
+      return;
+    }
+    webhookCallback(bot, 'express')(req, res);
+  });
+
+  // Alternative standard webhook path
+  app.post('/telegram/webhook', (req, res) => {
     const secret = req.headers['x-telegram-bot-api-secret-token'];
     if (config.WEBHOOK_SECRET && secret && secret !== config.WEBHOOK_SECRET) {
       res.status(403).send('Forbidden');
@@ -28,15 +38,8 @@ async function startServer() {
     webhookCallback(bot, 'express')(req, res);
   });
 
-  // --- API ROUTE: BOT STATUS & DASHBOARD DATA ---
+  // --- API ROUTE: BOT STATUS & STATS ---
   app.get('/api/status', async (req, res) => {
-    const users = dbService.getAllUsers();
-    const tasks = dbService.getAvailableTasks();
-    const submissions = dbService.getAllSubmissions();
-    const withdrawals = dbService.getAllWithdrawals();
-    const settings = dbService.getSettings();
-    const latestAnn = dbService.getLatestAnnouncement();
-
     let botInfo = null;
     let botConnected = false;
 
@@ -44,8 +47,15 @@ async function startServer() {
       botInfo = await bot.api.getMe();
       botConnected = true;
     } catch {
-      botInfo = { id: 8864392110, is_bot: true, first_name: 'InfiniteHits', username: config.BOT_USERNAME };
+      botInfo = {
+        id: 8864392110,
+        is_bot: true,
+        first_name: 'InfiniteHits Bot',
+        username: config.BOT_USERNAME,
+      };
     }
+
+    const systemStats = db.getSystemStats();
 
     res.json({
       success: true,
@@ -59,25 +69,20 @@ async function startServer() {
         endpoint: `${config.APP_URL}${webhookPath}`,
         secretConfigured: Boolean(config.WEBHOOK_SECRET),
       },
-      stats: {
-        totalUsers: users.length,
-        totalTasks: tasks.length,
-        pendingSubmissions: submissions.filter((s) => s.status === 'pending').length,
-        approvedSubmissions: submissions.filter((s) => s.status === 'approved').length,
-        pendingWithdrawals: withdrawals.filter((w) => w.status === 'pending').length,
-        totalWithdrawalAmount: withdrawals
-          .filter((w) => w.status === 'paid' || w.status === 'approved')
-          .reduce((acc, w) => acc + w.amount, 0),
+      stats: systemStats,
+      config: {
+        newUserBonus: config.NEW_USER_BONUS,
+        dailyBonus: config.DAILY_BONUS_AMOUNT,
+        referralReward: config.REFERRAL_REWARD_AMOUNT,
+        minVisitSeconds: config.MIN_VISIT_SECONDS,
+        bkashNumber: config.PAYMENT_BKASH_NUMBER,
+        nagadNumber: config.PAYMENT_NAGAD_NUMBER,
+        supportUsername: config.SUPPORT_USERNAME,
       },
-      settings,
-      latestAnnouncement: latestAnn,
-      submissions,
-      withdrawals,
-      tasks,
     });
   });
 
-  // --- API ROUTE: INTERACTIVE BOT SIMULATOR FOR BROWSER ---
+  // --- API ROUTE: INTERACTIVE TELEGRAM BOT SIMULATOR FOR AI STUDIO PREVIEW ---
   app.post('/api/simulator/update', async (req, res) => {
     try {
       const update = req.body;
@@ -87,180 +92,28 @@ async function startServer() {
       }
       clearCapturedResponses();
       await bot.handleUpdate(update);
-      res.json({ success: true, responses: [...capturedResponses], message: 'Update handled by Telegram bot' });
+      res.json({
+        success: true,
+        responses: [...capturedResponses],
+        message: 'Update processed by InfiniteHits bot engine',
+      });
     } catch (err) {
       console.error('Error in simulator update handler:', err);
       res.status(500).json({ error: (err as Error).message });
     }
   });
 
-  // --- API ROUTE: ADMIN APPROVE/REJECT SUBMISSIONS ---
-  app.post('/api/admin/approve-submission', async (req, res) => {
-    const { submissionId } = req.body;
-    if (!submissionId) {
-      res.status(400).json({ error: 'submissionId required' });
-      return;
-    }
-    const result = dbService.approveTaskSubmission(submissionId);
-    if (!result.success) {
-      res.status(400).json(result);
-      return;
-    }
-
-    // Try sending notification to user in Telegram
-    if (result.submission && result.user) {
-      try {
-        await bot.api.sendMessage(
-          result.user.telegramId,
-          `✅ *Task Approved!*\n\n` +
-            `Task: ${result.submission.taskTitle || 'Completed Task'}\n` +
-            `Reward: ৳${result.submission.rewardAmount.toFixed(2)} credited to your wallet balance.`,
-          { parse_mode: 'Markdown' }
-        );
-      } catch {
-        // User may not have started real Telegram bot
-      }
-    }
-
-    res.json(result);
+  // --- API ROUTE: CAMPAIGNS LIST (PUBLIC STATS) ---
+  app.get('/api/campaigns', (req, res) => {
+    const stats = db.getSystemStats();
+    res.json({
+      success: true,
+      stats,
+      packages: db.getPackages(),
+    });
   });
 
-  app.post('/api/admin/reject-submission', async (req, res) => {
-    const { submissionId, reason } = req.body;
-    if (!submissionId) {
-      res.status(400).json({ error: 'submissionId required' });
-      return;
-    }
-    const result = dbService.rejectTaskSubmission(submissionId, reason);
-    if (!result.success) {
-      res.status(400).json(result);
-      return;
-    }
-
-    if (result.submission) {
-      try {
-        await bot.api.sendMessage(
-          result.submission.userId,
-          `❌ *Task Proof Rejected*\n\n` +
-            `Task: ${result.submission.taskTitle || 'Task'}\n` +
-            `Reason: ${result.submission.rejectionReason || 'Proof rejected by reviewer.'}`,
-          { parse_mode: 'Markdown' }
-        );
-      } catch {
-        // User may not have active Telegram chat
-      }
-    }
-
-    res.json(result);
-  });
-
-  // --- API ROUTE: ADMIN PROCESS WITHDRAWAL ---
-  app.post('/api/admin/process-withdrawal', async (req, res) => {
-    const { withdrawalId, status, reason } = req.body;
-    if (!withdrawalId || !status) {
-      res.status(400).json({ error: 'withdrawalId and status required' });
-      return;
-    }
-
-    const result = dbService.processWithdrawal(withdrawalId, status, reason);
-    if (!result.success) {
-      res.status(400).json(result);
-      return;
-    }
-
-    if (result.withdrawal && result.user) {
-      const w = result.withdrawal;
-      let notificationMsg = '';
-      if (status === 'approved' || status === 'paid') {
-        notificationMsg =
-          `✅ *Withdrawal Approved & Paid*\n\n` +
-          `Amount: ৳${w.amount.toFixed(2)}\n` +
-          `Method: ${w.method}\n` +
-          `Account: ${w.account}\n` +
-          `Status: Paid\n\n` +
-          `Thank you for using InfiniteHits!`;
-      } else if (status === 'rejected' || status === 'cancelled') {
-        notificationMsg =
-          `❌ *Withdrawal Rejected*\n\n` +
-          `Amount: ৳${w.amount.toFixed(2)}\n` +
-          `Method: ${w.method}\n` +
-          `Reason: ${w.rejectionReason}\n\n` +
-          `৳${w.amount.toFixed(2)} has been refunded to your available balance.`;
-      }
-
-      if (notificationMsg) {
-        try {
-          await bot.api.sendMessage(result.user.telegramId, notificationMsg, {
-            parse_mode: 'Markdown',
-          });
-        } catch {
-          // Ignore if telegram send fails
-        }
-      }
-    }
-
-    res.json(result);
-  });
-
-  // --- API ROUTE: ADMIN ADD TASK & ANNOUNCEMENT ---
-  app.post('/api/admin/add-task', (req, res) => {
-    const { title, description, instructions, reward, estimatedTime } = req.body;
-    if (!title || !description || !instructions || !reward) {
-      res.status(400).json({ error: 'Missing required task fields' });
-      return;
-    }
-    const task = dbService.addTask(
-      title,
-      description,
-      instructions,
-      Number(reward),
-      estimatedTime || '2 minutes'
-    );
-    res.json({ success: true, task });
-  });
-
-  app.post('/api/admin/add-announcement', (req, res) => {
-    const { title, message } = req.body;
-    if (!title || !message) {
-      res.status(400).json({ error: 'Title and message required' });
-      return;
-    }
-    const ann = dbService.addAnnouncement(title, message);
-    res.json({ success: true, announcement: ann });
-  });
-
-  // Setup Webhook or Polling mode
-  if (config.TELEGRAM_BOT_TOKEN) {
-    if (process.env.VERCEL && config.WEBHOOK_URL) {
-      bot.api
-        .setWebhook(config.WEBHOOK_URL, {
-          secret_token: config.WEBHOOK_SECRET,
-        })
-        .then(() => {
-          console.log(`Telegram webhook configured: ${config.WEBHOOK_URL}`);
-        })
-        .catch((err) => {
-          console.error('Failed to set Telegram webhook:', err.message);
-        });
-    } else {
-      // Clear any active webhook and run long-polling in development/local server
-      bot.api
-        .deleteWebhook()
-        .then(() => {
-          console.log('Cleared Telegram Webhook. Starting long-polling listener...');
-          return bot.start({
-            onStart: (info) => {
-              console.log(`Telegram Bot @${info.username} is ACTIVE and responding via long-polling.`);
-            },
-          });
-        })
-        .catch((err) => {
-          console.warn('Long-polling note:', err.message);
-        });
-    }
-  }
-
-  // Serve Frontend / Vite Middleware
+  // Vite middleware for development / production static SPA
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -277,12 +130,11 @@ async function startServer() {
 
   if (!process.env.VERCEL) {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`InfiniteHits Telegram Bot server running on http://0.0.0.0:${PORT}`);
+      console.log(`InfiniteHits Telegram Bot engine running on http://0.0.0.0:${PORT}`);
     });
   }
 
   return app;
 }
 
-const appPromise = startServer();
-export default appPromise;
+startServer();

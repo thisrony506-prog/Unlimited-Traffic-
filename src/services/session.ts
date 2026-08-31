@@ -1,4 +1,4 @@
-import { UserSessionState, WithdrawalMethod } from '../types';
+import { UserSessionState, CreditPackage, PaymentMethod } from '../types';
 
 class SessionManager {
   private sessions: Map<number, UserSessionState> = new Map();
@@ -25,30 +25,37 @@ class SessionManager {
     this.sessions.set(userId, { step: 'idle' });
   }
 
-  public startTaskProof(userId: number, taskId: string) {
-    this.setStep(userId, 'submitting_task_proof', { activeTaskId: taskId });
+  // Promote flow
+  public startPromote(userId: number) {
+    this.setStep(userId, 'promote_enter_url');
   }
 
-  public startWithdrawMethod(userId: number, method: WithdrawalMethod) {
-    this.setStep(userId, 'withdraw_enter_amount', { withdrawMethod: method });
+  public setPromoteUrl(userId: number, url: string) {
+    this.setStep(userId, 'promote_select_visits', { promoteUrl: url });
   }
 
-  public setWithdrawAmount(userId: number, amount: number) {
+  public setPromoteVisits(userId: number, visits: number) {
     const s = this.getSession(userId);
-    s.withdrawAmount = amount;
-    s.step = 'withdraw_enter_account';
+    s.promoteVisits = visits;
+    s.step = 'promote_confirm';
     this.sessions.set(userId, s);
   }
 
-  public setWithdrawAccount(userId: number, account: string) {
+  // Payment flow
+  public startPackagePayment(userId: number, pkg: CreditPackage) {
+    this.setStep(userId, 'payment_select_method', { selectedPackage: pkg });
+  }
+
+  public setPaymentMethod(userId: number, method: PaymentMethod) {
     const s = this.getSession(userId);
-    s.withdrawAccount = account;
-    s.step = 'withdraw_confirm';
+    s.paymentMethod = method;
+    s.step = 'payment_enter_trxid';
     this.sessions.set(userId, s);
   }
 
+  // Support flow
   public startSupportMessage(userId: number) {
-    this.setStep(userId, 'entering_support_message');
+    this.setStep(userId, 'support_enter_message');
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "InfiniteHits Telegram Bot",
-  "description": "Production-ready Telegram Income & Task Bot called InfiniteHits with task system, referral program, balance ledger, and withdrawal system.",
+  "description": "InfiniteHits — user-driven website promotion and traffic exchange Telegram Bot with credits economy, campaign management, referral program, and package purchases.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

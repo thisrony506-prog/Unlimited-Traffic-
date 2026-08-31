@@ -1,28 +1,44 @@
 import { Bot } from 'grammy';
 import { config } from '../config/env';
 import { handleStart, handleMenu } from '../handlers/startHandler';
+import {
+  handleGetTraffic,
+  handleStartVisitCallback,
+  handleVerifyVisitCallback,
+} from '../handlers/trafficHandler';
+import {
+  handlePromoteStart,
+  handlePromoteVisitsSelected,
+  handlePromoteConfirmCallback,
+  handlePromoteCancelCallback,
+} from '../handlers/promoteHandler';
+import {
+  handleMyCampaigns,
+  handleToggleCampaignCallback,
+  handleCampaignDetailCallback,
+} from '../handlers/myCampaignsHandler';
+import {
+  handleEarnHub,
+  handleDailyBonusScreen,
+  handleDailyBonusClaimCallback,
+} from '../handlers/earnHandler';
+import {
+  handleBuyPackages,
+  handleSelectPackageCallback,
+  handleSelectPaymentMethodCallback,
+  handlePaymentConfirmPrompt,
+} from '../handlers/buyCreditsHandler';
 import { handleBalance } from '../handlers/balanceHandler';
-import {
-  handleAvailableTasks,
-  handleStartTaskCallback,
-  handleSubmitTaskCallback,
-  handleMyTasks,
-} from '../handlers/taskHandler';
-import { handleReferral, handleCopyRefCallback } from '../handlers/referralHandler';
-import {
-  handleWithdrawStart,
-  handleWithdrawMethodCallback,
-  handleWithdrawConfirmCallback,
-  handleWithdrawCancelCallback,
-} from '../handlers/withdrawHandler';
+import { handleReferral, handleReferralStats } from '../handlers/referralHandler';
+import { handleStats } from '../handlers/statsHandler';
 import { handleHistory } from '../handlers/historyHandler';
 import { handleProfile } from '../handlers/profileHandler';
 import {
   handleSupport,
-  handleSupportContactCallback,
-  handleSupportFAQCallback,
+  handleFAQList,
+  handleFAQItem,
+  handleSupportContactMessage,
 } from '../handlers/supportHandler';
-import { handleRules, handleHelp } from '../handlers/rulesHandler';
 import { handleIncomingMessage } from '../handlers/messageHandler';
 
 export interface CapturedBotResponse {
@@ -35,7 +51,6 @@ export interface CapturedBotResponse {
 }
 
 export let capturedResponses: CapturedBotResponse[] = [];
-
 let responseCounter = 0;
 
 export function clearCapturedResponses() {
@@ -50,7 +65,7 @@ export function createTelegramBot(): Bot {
       id: 8864392110,
       is_bot: true,
       first_name: 'InfiniteHits Bot',
-      username: config.BOT_USERNAME || 'earnflowV3_bot',
+      username: config.BOT_USERNAME || 'InfiniteHits_bot',
       can_join_groups: true,
       can_read_all_group_messages: false,
       supports_inline_queries: false,
@@ -61,7 +76,7 @@ export function createTelegramBot(): Bot {
     } as any,
   });
 
-  // Install API transformer to intercept outgoing Telegram API calls
+  // Install API transformer to intercept outgoing Telegram API calls for preview simulator
   bot.api.config.use(async (prev, method, payload, signal) => {
     if (method === 'sendMessage' || method === 'editMessageText') {
       const payloadObj = payload as any;
@@ -144,64 +159,129 @@ export function createTelegramBot(): Bot {
   bot.command('start', handleStart);
   bot.command('menu', handleMenu);
   bot.command('balance', handleBalance);
-  bot.command('tasks', handleAvailableTasks);
-  bot.command('mytasks', handleMyTasks);
+  bot.command('traffic', handleGetTraffic);
+  bot.command('promote', handlePromoteStart);
+  bot.command('packages', handleBuyPackages);
+  bot.command('earn', handleEarnHub);
+  bot.command('daily', handleDailyBonusScreen);
   bot.command('referral', handleReferral);
-  bot.command('withdraw', handleWithdrawStart);
+  bot.command('stats', handleStats);
   bot.command('history', (ctx) => handleHistory(ctx, 1));
   bot.command('profile', handleProfile);
+  bot.command('help', handleSupport);
   bot.command('support', handleSupport);
-  bot.command('rules', handleRules);
-  bot.command('help', handleHelp);
+  bot.command('mycampaigns', handleMyCampaigns);
 
   // --- REPLY KEYBOARD BUTTON TEXT LISTENERS ---
-  bot.hears('💰 My Balance', handleBalance);
-  bot.hears('📋 Available Tasks', handleAvailableTasks);
-  bot.hears('✅ My Tasks', handleMyTasks);
+  bot.hears('🌐 Get Traffic', handleGetTraffic);
+  bot.hears('➕ Promote Website', handlePromoteStart);
+  bot.hears('💳 Buy Credits', handleBuyPackages);
+  bot.hears('🎁 Earn Credits', handleEarnHub);
   bot.hears('👥 Referral', handleReferral);
-  bot.hears('💸 Withdraw', handleWithdrawStart);
-  bot.hears('📊 History', (ctx) => handleHistory(ctx, 1));
+  bot.hears('💰 My Balance', handleBalance);
+  bot.hears('📊 Statistics', handleStats);
+  bot.hears('📜 History', (ctx) => handleHistory(ctx, 1));
   bot.hears('👤 Profile', handleProfile);
   bot.hears('🎧 Support', handleSupport);
-  bot.hears('📜 Rules', handleRules);
 
-  // --- INLINE CALLBACK QUERY LISTENERS ---
+  // --- STATIC INLINE CALLBACK QUERIES ---
   bot.callbackQuery('nav_main', handleMenu);
-  bot.callbackQuery('nav_withdraw', handleWithdrawStart);
+  bot.callbackQuery('nav_traffic', handleGetTraffic);
+  bot.callbackQuery('nav_promote', handlePromoteStart);
+  bot.callbackQuery('nav_packages', handleBuyPackages);
+  bot.callbackQuery('nav_earn', handleEarnHub);
+  bot.callbackQuery('nav_referral', handleReferral);
+  bot.callbackQuery('nav_referral_stats', handleReferralStats);
+  bot.callbackQuery('nav_balance', handleBalance);
+  bot.callbackQuery('nav_stats', handleStats);
   bot.callbackQuery('nav_history', (ctx) => handleHistory(ctx, 1));
-  bot.callbackQuery('nav_tasks', handleAvailableTasks);
-  bot.callbackQuery('wdr_method_bKash', (ctx) => handleWithdrawMethodCallback(ctx, 'bKash'));
-  bot.callbackQuery('wdr_method_Nagad', (ctx) => handleWithdrawMethodCallback(ctx, 'Nagad'));
-  bot.callbackQuery('wdr_confirm_yes', handleWithdrawConfirmCallback);
-  bot.callbackQuery('wdr_cancel', handleWithdrawCancelCallback);
-  bot.callbackQuery('support_contact', handleSupportContactCallback);
-  bot.callbackQuery('support_faq', handleSupportFAQCallback);
+  bot.callbackQuery('nav_profile', handleProfile);
+  bot.callbackQuery('nav_support', handleSupport);
+  bot.callbackQuery('nav_my_campaigns', handleMyCampaigns);
+  bot.callbackQuery('nav_daily_bonus', handleDailyBonusScreen);
 
-  // Dynamic Callbacks
+  bot.callbackQuery('traffic_next', handleGetTraffic);
+  bot.callbackQuery('promote_confirm_yes', handlePromoteConfirmCallback);
+  bot.callbackQuery('promote_cancel', handlePromoteCancelCallback);
+  bot.callbackQuery('daily_bonus_claim', handleDailyBonusClaimCallback);
+  bot.callbackQuery('pay_confirm_prompt', handlePaymentConfirmPrompt);
+  bot.callbackQuery('support_contact_msg', handleSupportContactMessage);
+  bot.callbackQuery('support_faq_list', handleFAQList);
+
+  // --- DYNAMIC CALLBACK QUERIES ---
   bot.on('callback_query:data', async (ctx, next) => {
     const data = ctx.callbackQuery.data;
 
-    if (data.startsWith('task_start_')) {
-      const taskId = data.replace('task_start_', '');
-      await handleStartTaskCallback(ctx, taskId);
+    // Visit campaign start
+    if (data.startsWith('visit_start_')) {
+      const campId = data.replace('visit_start_', '');
+      await handleStartVisitCallback(ctx, campId);
       return;
     }
-    if (data.startsWith('task_submit_')) {
-      const taskId = data.replace('task_submit_', '');
-      await handleSubmitTaskCallback(ctx, taskId);
+
+    // Verify visit
+    if (data.startsWith('visit_verify_')) {
+      const visitId = data.replace('visit_verify_', '');
+      await handleVerifyVisitCallback(ctx, visitId);
       return;
     }
-    if (data.startsWith('copy_ref_')) {
-      const code = data.replace('copy_ref_', '');
-      await handleCopyRefCallback(ctx, code);
+
+    // Promote visits count selection
+    if (data.startsWith('promote_visits_')) {
+      const countStr = data.replace('promote_visits_', '');
+      const count = parseInt(countStr, 10) || 50;
+      await handlePromoteVisitsSelected(ctx, count);
       return;
     }
+
+    // Buy package selection
+    if (data.startsWith('buy_pkg_')) {
+      const pkgId = data.replace('buy_pkg_', '');
+      await handleSelectPackageCallback(ctx, pkgId);
+      return;
+    }
+
+    // Payment method selection: pay_method_{packageId}_{method}
+    if (data.startsWith('pay_method_')) {
+      const rest = data.replace('pay_method_', '');
+      const lastUnderscore = rest.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        const pkgId = rest.substring(0, lastUnderscore);
+        const method = rest.substring(lastUnderscore + 1) as any;
+        await handleSelectPaymentMethodCallback(ctx, pkgId, method);
+        return;
+      }
+    }
+
+    // Toggle campaign pause / resume
+    if (data.startsWith('camp_toggle_')) {
+      const campId = data.replace('camp_toggle_', '');
+      await handleToggleCampaignCallback(ctx, campId);
+      return;
+    }
+
+    // Campaign details
+    if (data.startsWith('camp_detail_')) {
+      const campId = data.replace('camp_detail_', '');
+      await handleCampaignDetailCallback(ctx, campId);
+      return;
+    }
+
+    // History page navigation
     if (data.startsWith('hist_page_')) {
       const pageStr = data.replace('hist_page_', '');
       const page = parseInt(pageStr, 10) || 1;
       await handleHistory(ctx, page);
       return;
     }
+
+    // FAQ item view
+    if (data.startsWith('faq_item_')) {
+      const faqId = data.replace('faq_item_', '');
+      await handleFAQItem(ctx, faqId);
+      return;
+    }
+
     await next();
   });
 

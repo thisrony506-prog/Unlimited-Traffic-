@@ -1,33 +1,34 @@
 import { Context } from 'grammy';
-import { dbService } from '../database/db';
-import { formatHistoryMessage } from '../utils/formatters';
-import { historyPaginationInlineKeyboard } from '../keyboards';
+import { db } from '../database/db';
+import { historyInlineKeyboard } from '../keyboards';
+import { formatHistoryScreen } from '../utils/formatters';
 import { sessionManager } from '../services/session';
 
 export const handleHistory = async (ctx: Context, page: number = 1) => {
   if (!ctx.from) return;
-  sessionManager.clearSession(ctx.from.id);
 
-  const res = dbService.getUserTransactions(ctx.from.id, page, 5);
-  const text = formatHistoryMessage(res.items, res.page, res.totalPages);
+  const telegramId = ctx.from.id;
+  sessionManager.clearSession(telegramId);
+
+  const { transactions, total, totalPages, currentPage } = db.getUserTransactions(telegramId, page, 5);
+  const text = formatHistoryScreen(transactions, currentPage, totalPages, total);
 
   if (ctx.callbackQuery) {
-    await ctx.answerCallbackQuery().catch(() => {});
     try {
       await ctx.editMessageText(text, {
         parse_mode: 'Markdown',
-        reply_markup: historyPaginationInlineKeyboard(res.page, res.totalPages),
+        reply_markup: historyInlineKeyboard(currentPage, totalPages),
       });
     } catch {
       await ctx.reply(text, {
         parse_mode: 'Markdown',
-        reply_markup: historyPaginationInlineKeyboard(res.page, res.totalPages),
+        reply_markup: historyInlineKeyboard(currentPage, totalPages),
       });
     }
   } else {
     await ctx.reply(text, {
       parse_mode: 'Markdown',
-      reply_markup: historyPaginationInlineKeyboard(res.page, res.totalPages),
+      reply_markup: historyInlineKeyboard(currentPage, totalPages),
     });
   }
 };

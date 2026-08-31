@@ -1,7 +1,7 @@
 import { Context } from 'grammy';
-import { dbService } from '../database/db';
-import { formatWelcomeMessage } from '../utils/formatters';
-import { mainReplyKeyboard } from '../keyboards';
+import { db } from '../database/db';
+import { mainReplyKeyboard, mainInlineKeyboard } from '../keyboards';
+import { formatWelcomeMessage, formatMenuMessage } from '../utils/formatters';
 import { sessionManager } from '../services/session';
 
 export const handleStart = async (ctx: Context) => {
@@ -12,55 +12,66 @@ export const handleStart = async (ctx: Context) => {
   const lastName = ctx.from.last_name;
   const username = ctx.from.username;
 
-  // Extract referral parameter e.g., /start ABC123
-  const text = ctx.message?.text || '';
-  const parts = text.split(' ');
-  const referralParam = parts.length > 1 ? parts[1].trim() : undefined;
+  // Extract referral payload if /start IH12345
+  let startPayload = '';
+  if (ctx.message && ctx.message.text) {
+    const parts = ctx.message.text.trim().split(' ');
+    if (parts.length > 1) {
+      startPayload = parts[1];
+    }
+  }
 
-  // Clear any active conversation session
   sessionManager.clearSession(telegramId);
+  const { user, isNew } = db.getOrCreateUser(telegramId, firstName, lastName, username, startPayload);
 
-  // Get or register user
-  const { user, isNew } = dbService.getOrCreateUser(
-    telegramId,
-    firstName,
-    lastName,
-    username,
-    referralParam
-  );
-
-  const announcement = dbService.getLatestAnnouncement();
-  const welcomeText = formatWelcomeMessage(user.firstName, announcement);
-
-  await ctx.reply(welcomeText, {
+  // Send persistent reply keyboard first
+  await ctx.reply(`🚀 Welcome to *InfiniteHits*!`, {
     parse_mode: 'Markdown',
     reply_markup: mainReplyKeyboard,
   });
 
-  if (isNew && user.referredBy) {
-    // Notify referrer if possible
-    try {
-      const settings = dbService.getSettings();
-      await ctx.api.sendMessage(
-        user.referredBy,
-        `🎉 *New Referral Registered!*\n\nUser ${user.firstName} (@${user.username || user.telegramId}) joined using your link.\nReward: ৳${settings.referralReward.toFixed(2)} added to your balance!`,
-        { parse_mode: 'Markdown' }
-      );
-    } catch {
-      // Ignore if user blocked bot
-    }
+  if (isNew) {
+    const welcomeText = formatWelcomeMessage(firstName);
+    await ctx.reply(welcomeText, {
+      parse_mode: 'Markdown',
+      reply_markup: mainInlineKeyboard,
+    });
+  } else {
+    const { earnedToday } = db.getUserTodayStats(telegramId);
+    const menuText = formatMenuMessage(user, earnedToday);
+    await ctx.reply(menuText, {
+      parse_mode: 'Markdown',
+      reply_markup: mainInlineKeyboard,
+    });
   }
 };
 
 export const handleMenu = async (ctx: Context) => {
   if (!ctx.from) return;
-  sessionManager.clearSession(ctx.from.id);
-  const user = dbService.getUser(ctx.from.id);
-  const announcement = dbService.getLatestAnnouncement();
 
-  const text = formatWelcomeMessage(user ? user.firstName : ctx.from.first_name, announcement);
-  await ctx.reply(text, {
-    parse_mode: 'Markdown',
-    reply_markup: mainReplyKeyboard,
-  });
+  const telegramId = ctx.from.id;
+  sessionManager.clearSession(telegramId);
+
+  const user = db.getUser(telegramId) || db.getOrCreateUser(telegramId, ctx.from.first_name || 'User').user;
+  const { earnedToday } = db.getUserTodayStats(telegramId);
+  const menuText = formatMenuMessage(user, earnedToday);
+
+  if (ctx.callbackQuery) {
+    try {
+      await ctx.editMessageText(menuText, {
+        parse_mode: 'Markdown',
+        reply_markup: mainInlineKeyboard,
+      });
+    } catch {
+      await ctx.reply(menuText, {
+        parse_mode: 'Markdown',
+        reply_markup: mainInlineKeyboard,
+      });
+    }
+  } else {
+    await ctx.reply(menuText, {
+      parse_mode: 'Markdown',
+      reply_markup: mainInlineKeyboard,
+    });
+  }
 };
