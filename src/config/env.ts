@@ -5,7 +5,7 @@ export const config = {
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8864392110:AAHkepGrKnIyARAI14z9eF0bbY5m7CQP-kA',
   BOT_USERNAME: (process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'InfiniteHits_bot').replace(/^@/, '').trim(),
   SUPPORT_USERNAME: (process.env.SUPPORT_USERNAME || 'InfiniteHits_Support').replace(/^@/, '').trim(),
-  APP_URL: process.env.APP_URL || 'http://localhost:3000',
+  APP_URL: process.env.APP_URL || 'https://infinitehits.vercel.app',
   WEBHOOK_SECRET: process.env.WEBHOOK_SECRET || 'infinitehits_webhook_secret_token',
   WEBHOOK_URL: process.env.WEBHOOK_URL || '',
   

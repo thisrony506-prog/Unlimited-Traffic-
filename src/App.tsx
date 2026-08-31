@@ -65,6 +65,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    // If opened directly as a Telegram Mini App or on /miniapp path, default to miniapp view
+    if (
+      (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) ||
+      window.location.pathname.includes('/miniapp') ||
+      window.location.search.includes('tgWebApp') ||
+      window.location.search.includes('tab=miniapp')
+    ) {
+      setActiveTab('miniapp');
+    }
+
     fetchStatus();
     // Initialize simulator with /start command
     sendTelegramUpdate('/start');

@@ -40,6 +40,8 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [adSecondsLeft, setAdSecondsLeft] = useState(0);
   const [currentAdType, setCurrentAdType] = useState<string>('rewarded_interstitial');
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
 
   // Monetag Settings Edit Mode
   const [showSettings, setShowSettings] = useState(false);
@@ -49,6 +51,40 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
   const [editRewardCredits, setEditRewardCredits] = useState('5');
   const [editDailyLimit, setEditDailyLimit] = useState('20');
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Dynamically load Monetag SDK Script
+  const loadMonetagSdk = (zoneId: string, tagUrl: string) => {
+    if (!zoneId) return;
+    try {
+      const scriptId = `monetag-sdk-${zoneId}`;
+      let script = document.getElementById(scriptId) as HTMLScriptElement;
+      
+      if (!script) {
+        script = document.createElement('script');
+        script.id = scriptId;
+        script.async = true;
+        script.setAttribute('data-cfasync', 'false');
+        script.setAttribute('data-zone', zoneId);
+        script.setAttribute('data-sdk', `show_${zoneId}`);
+        script.src = tagUrl.startsWith('//') ? window.location.protocol + tagUrl : tagUrl;
+        
+        script.onload = () => {
+          setSdkLoaded(true);
+          setSdkError(null);
+        };
+        script.onerror = () => {
+          setSdkLoaded(false);
+          setSdkError('Ad script blocked or loading failed (AdBlock active?)');
+        };
+        
+        document.head.appendChild(script);
+      } else {
+        setSdkLoaded(true);
+      }
+    } catch (err) {
+      console.warn('Monetag SDK Injection Notice:', err);
+    }
+  };
 
   // Detect Telegram WebApp user if running inside real Telegram
   useEffect(() => {
@@ -83,12 +119,16 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
 
       if (cRes.ok) {
         const cData = await cRes.json();
-        setMonetagConfig(cData.config);
-        setEditZoneId(cData.config.zoneId || '');
-        setEditDirectLink(cData.config.directLink || '');
-        setEditTagUrl(cData.config.tagUrl || '');
-        setEditRewardCredits(String(cData.config.rewardCredits || '5'));
-        setEditDailyLimit(String(cData.config.dailyLimit || '20'));
+        const cfg = cData.config;
+        setMonetagConfig(cfg);
+        setEditZoneId(cfg.zoneId || '');
+        setEditDirectLink(cfg.directLink || '');
+        setEditTagUrl(cfg.tagUrl || '');
+        setEditRewardCredits(String(cfg.rewardCredits || '5'));
+        setEditDailyLimit(String(cfg.dailyLimit || '20'));
+
+        // Trigger Monetag SDK loader
+        loadMonetagSdk(cfg.zoneId || '8839201', cfg.tagUrl || '//kulroakonsu.net/88/tag.min.js');
       }
     } catch (err) {
       console.error('Failed to load miniapp data:', err);
@@ -117,7 +157,7 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
     return () => clearInterval(interval);
   }, [isWatchingAd, adSecondsLeft, currentAdType]);
 
-  // Start Watching Monetag Ad
+  // Start Watching Monetag Ad via Monetag SDK or Direct Link
   const startWatchAd = (adType: 'rewarded_interstitial' | 'in_page_push' | 'smartlink') => {
     if (monetagStats && monetagStats.remainingToday <= 0) {
       setErrorNotice(`Daily limit reached! You have completed all ${monetagStats.dailyLimit} ads today.`);
@@ -128,7 +168,32 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
     setRewardNotice(null);
     setCurrentAdType(adType);
 
-    // If SmartLink or Direct Ad link is configured, open it in background / new tab
+    const zoneId = monetagConfig?.zoneId || '8839201';
+    const sdkFunction = (window as any)[`show_${zoneId}`] || (window as any).show_8839201 || (window as any).show_rewarded;
+
+    // Trigger Monetag Official SDK function if available
+    if (adType === 'rewarded_interstitial' && typeof sdkFunction === 'function') {
+      try {
+        const result = sdkFunction();
+        if (result && typeof result.then === 'function') {
+          result
+            .then(() => {
+              completeAdReward(adType);
+            })
+            .catch((e: any) => {
+              console.log('SDK close/dismiss:', e);
+              // Fallback to in-app player countdown
+              setIsWatchingAd(true);
+              setAdSecondsLeft(10);
+            });
+          return;
+        }
+      } catch (err) {
+        console.warn('Monetag SDK invoke error, fallback to visual player:', err);
+      }
+    }
+
+    // If SmartLink or Direct Ad link is configured, open it in new tab/popup
     if (adType === 'smartlink' && monetagConfig?.directLink) {
       try {
         window.open(monetagConfig.directLink, '_blank', 'noopener,noreferrer');
@@ -397,9 +462,9 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
           </div>
         ) : null}
 
-        {/* Daily Monetag Progress Bar */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-xs mb-2">
+        {/* Daily Monetag Progress Bar & SDK Status */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-slate-300 font-medium flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-amber-400" />
               Daily Ad Tasks Progress
@@ -414,9 +479,14 @@ export const MiniAppView: React.FC<MiniAppProps> = ({ initialUserId = 88776655, 
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-            <span>Remaining today: {monetagStats?.remainingToday ?? 20} ads</span>
-            <span className="text-emerald-400 font-medium">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+            <span className="flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-full ${sdkLoaded ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+              <span className="text-[10px] text-slate-300 font-mono">
+                {sdkLoaded ? `SDK Active (Zone: ${monetagConfig?.zoneId || '8839201'})` : 'Monetag SDK Ready'}
+              </span>
+            </span>
+            <span className="text-emerald-400 font-medium font-mono">
               +{monetagConfig?.rewardCredits || 5} Credits / Ad
             </span>
           </div>
