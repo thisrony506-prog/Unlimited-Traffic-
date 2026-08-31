@@ -62,7 +62,7 @@ export default function App() {
   }, [messages]);
 
   const sendTelegramUpdate = async (text: string, callbackData?: string) => {
-    const userMsgId = Date.now().toString();
+    const userMsgId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     if (!callbackData) {
@@ -201,7 +201,7 @@ export default function App() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-white">EarnFlow Telegram Bot</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white">InfiniteHits Telegram Bot</h1>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
                 Bot Engine Running
@@ -354,8 +354,8 @@ export default function App() {
               ) : (
                 botStatus?.submissions
                   ?.filter((s: any) => s.status === 'pending')
-                  .map((sub: any) => (
-                    <div key={sub.submissionId} className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/60 text-xs space-y-2">
+                  .map((sub: any, sIdx: number) => (
+                    <div key={sub.submissionId ? `${sub.submissionId}_${sIdx}` : `sub_${sIdx}`} className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/60 text-xs space-y-2">
                       <div className="flex justify-between font-medium text-slate-200">
                         <span>{sub.taskTitle || sub.taskId}</span>
                         <span className="text-emerald-400 font-bold">৳{sub.rewardAmount}</span>
@@ -399,8 +399,8 @@ export default function App() {
               ) : (
                 botStatus?.withdrawals
                   ?.filter((w: any) => w.status === 'pending')
-                  .map((wdr: any) => (
-                    <div key={wdr.withdrawalId} className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/60 text-xs space-y-2">
+                  .map((wdr: any, wIdx: number) => (
+                    <div key={wdr.withdrawalId ? `${wdr.withdrawalId}_${wIdx}` : `wdr_${wIdx}`} className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/60 text-xs space-y-2">
                       <div className="flex justify-between font-medium text-slate-200">
                         <span>{wdr.method} ({wdr.account})</span>
                         <span className="text-amber-400 font-bold">৳{wdr.amount}</span>
@@ -436,10 +436,10 @@ export default function App() {
             <div className="bg-slate-800/90 px-4 py-3 flex items-center justify-between border-b border-slate-700/80">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-base shadow">
-                  EF
+                  IH
                 </div>
                 <div>
-                  <div className="font-semibold text-slate-100 text-sm">EarnFlow Bot</div>
+                  <div className="font-semibold text-slate-100 text-sm">InfiniteHits Bot</div>
                   <div className="text-[11px] text-cyan-400">bot • @{botStatus?.bot?.username || 'earnflowV3_bot'}</div>
                 </div>
               </div>
@@ -457,9 +457,9 @@ export default function App() {
                 </span>
               </div>
 
-              {messages.map((msg) => (
+              {messages.map((msg, mIdx) => (
                 <div
-                  key={msg.id}
+                  key={msg.id ? `${msg.id}_${mIdx}` : `msg_${mIdx}`}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
@@ -474,10 +474,10 @@ export default function App() {
                   {msg.inlineKeyboard && (
                     <div className="mt-1.5 space-y-1 w-full max-w-[85%]">
                       {msg.inlineKeyboard.map((row: any[], rIdx: number) => (
-                        <div key={rIdx} className="flex gap-1.5 flex-wrap">
+                        <div key={`row_${rIdx}`} className="flex gap-1.5 flex-wrap">
                           {row.map((btn: any, bIdx: number) => (
                             <button
-                              key={bIdx}
+                              key={`btn_${rIdx}_${bIdx}_${btn.callback_data || btn.text}`}
                               onClick={() => sendTelegramUpdate(btn.text, btn.callback_data)}
                               className="flex-1 py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700/90 border border-cyan-500/30 text-cyan-300 rounded-lg text-xs font-medium transition text-center shadow-sm"
                             >

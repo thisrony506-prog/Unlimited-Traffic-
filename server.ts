@@ -44,7 +44,7 @@ async function startServer() {
       botInfo = await bot.api.getMe();
       botConnected = true;
     } catch {
-      botInfo = { id: 8864392110, is_bot: true, first_name: 'EarnFlow', username: config.BOT_USERNAME };
+      botInfo = { id: 8864392110, is_bot: true, first_name: 'InfiniteHits', username: config.BOT_USERNAME };
     }
 
     res.json({
@@ -178,7 +178,7 @@ async function startServer() {
           `Method: ${w.method}\n` +
           `Account: ${w.account}\n` +
           `Status: Paid\n\n` +
-          `Thank you for using EarnFlow!`;
+          `Thank you for using InfiniteHits!`;
       } else if (status === 'rejected' || status === 'cancelled') {
         notificationMsg =
           `❌ *Withdrawal Rejected*\n\n` +
@@ -231,7 +231,7 @@ async function startServer() {
 
   // Setup Webhook or Polling mode
   if (config.TELEGRAM_BOT_TOKEN) {
-    if (config.WEBHOOK_URL) {
+    if (process.env.VERCEL && config.WEBHOOK_URL) {
       bot.api
         .setWebhook(config.WEBHOOK_URL, {
           secret_token: config.WEBHOOK_SECRET,
@@ -243,14 +243,20 @@ async function startServer() {
           console.error('Failed to set Telegram webhook:', err.message);
         });
     } else {
-      // Start polling mode in background for immediate responsiveness
-      bot.start({
-        onStart: (info) => {
-          console.log(`Telegram Bot @${info.username} started in long-polling mode.`);
-        },
-      }).catch((err) => {
-        console.warn('Long-polling note:', err.message);
-      });
+      // Clear any active webhook and run long-polling in development/local server
+      bot.api
+        .deleteWebhook()
+        .then(() => {
+          console.log('Cleared Telegram Webhook. Starting long-polling listener...');
+          return bot.start({
+            onStart: (info) => {
+              console.log(`Telegram Bot @${info.username} is ACTIVE and responding via long-polling.`);
+            },
+          });
+        })
+        .catch((err) => {
+          console.warn('Long-polling note:', err.message);
+        });
     }
   }
 
@@ -269,9 +275,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`EarnFlow Telegram Bot server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`InfiniteHits Telegram Bot server running on http://0.0.0.0:${PORT}`);
+    });
+  }
+
+  return app;
 }
 
-startServer();
+const appPromise = startServer();
+export default appPromise;

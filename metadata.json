@@ -1,6 +1,6 @@
 {
-  "name": "EarnFlow Telegram Bot",
-  "description": "Production-ready Telegram Income & Task Bot called EarnFlow with task system, referral program, balance ledger, and withdrawal system.",
+  "name": "InfiniteHits Telegram Bot",
+  "description": "Production-ready Telegram Income & Task Bot called InfiniteHits with task system, referral program, balance ledger, and withdrawal system.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

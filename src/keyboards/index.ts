@@ -51,7 +51,7 @@ export const referralInlineKeyboard = (referralCode: string) => {
   const botUser = config.BOT_USERNAME;
   const refLink = `https://t.me/${botUser}?start=${referralCode}`;
   const shareText = encodeURIComponent(
-    `💰 Join EarnFlow and start earning rewards by completing simple tasks! Direct payout to bKash & Nagad.\nJoin here: ${refLink}`
+    `💰 Join InfiniteHits and start earning rewards by completing simple tasks! Direct payout to bKash & Nagad.\nJoin here: ${refLink}`
   );
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`;
 

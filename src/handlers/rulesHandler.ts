@@ -22,7 +22,7 @@ export const handleHelp = async (ctx: Context) => {
   sessionManager.clearSession(ctx.from.id);
 
   const helpText =
-    `💡 *EarnFlow Command Help*\n\n` +
+    `💡 *InfiniteHits Command Help*\n\n` +
     `/start - Start bot and show main menu\n` +
     `/menu - Show main menu keyboard\n` +
     `/balance - View wallet balance and stats\n` +

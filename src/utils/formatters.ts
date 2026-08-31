@@ -2,7 +2,7 @@ import { User, Task, TaskSubmission, Transaction, Withdrawal, SystemSettings, An
 import { config } from '../config/env';
 
 export const formatWelcomeMessage = (firstName: string, announcement?: Announcement | null): string => {
-  let text = `👋 Welcome to EarnFlow, ${firstName}!\n\nComplete eligible tasks, earn rewards, invite friends, and manage your account directly from Telegram.\n\nChoose an option below to get started.`;
+  let text = `👋 Welcome to InfiniteHits, ${firstName}!\n\nComplete eligible tasks, earn rewards, invite friends, and manage your account directly from Telegram.\n\nChoose an option below to get started.`;
 
   if (announcement) {
     text = `📢 *${announcement.title}*\n${announcement.message}\n\n━━━━━━━━━━━━━━\n\n` + text;

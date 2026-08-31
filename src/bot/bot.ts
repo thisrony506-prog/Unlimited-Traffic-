@@ -36,8 +36,11 @@ export interface CapturedBotResponse {
 
 export let capturedResponses: CapturedBotResponse[] = [];
 
+let responseCounter = 0;
+
 export function clearCapturedResponses() {
   capturedResponses = [];
+  responseCounter = 0;
 }
 
 export function createTelegramBot(): Bot {
@@ -46,7 +49,7 @@ export function createTelegramBot(): Bot {
     botInfo: {
       id: 8864392110,
       is_bot: true,
-      first_name: 'EarnFlow Bot',
+      first_name: 'InfiniteHits Bot',
       username: config.BOT_USERNAME || 'earnflowV3_bot',
       can_join_groups: true,
       can_read_all_group_messages: false,
@@ -66,7 +69,7 @@ export function createTelegramBot(): Bot {
       const replyMarkup = payloadObj.reply_markup;
 
       capturedResponses.push({
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+        id: `bot_${Date.now()}_${++responseCounter}_${Math.random().toString(36).substring(2, 9)}`,
         sender: 'bot',
         text,
         replyKeyboard: replyMarkup?.keyboard,

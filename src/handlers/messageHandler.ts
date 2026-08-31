@@ -156,7 +156,7 @@ export const handleIncomingMessage = async (ctx: Context) => {
       `✅ *Support Ticket Created*\n\n` +
         `Ticket ID: \`${ticket.ticketId}\`\n` +
         `Status: 🟢 OPEN\n\n` +
-        `Thank you for contacting EarnFlow support. An agent will review your request shortly.`,
+        `Thank you for contacting InfiniteHits support. An agent will review your request shortly.`,
       {
         parse_mode: 'Markdown',
         reply_markup: backToMainInlineKeyboard,

@@ -34,7 +34,7 @@ const initialSettings: SystemSettings = {
   minWithdrawal: config.MIN_WITHDRAWAL_AMOUNT,
   referralReward: config.REFERRAL_REWARD_AMOUNT,
   supportChatId: config.SUPPORT_CHAT_ID,
-  rulesText: `📜 EarnFlow Community & Earning Rules
+  rulesText: `📜 InfiniteHits Community & Earning Rules
 
 1. Task Completion:
 • Only genuine, complete proof will be approved.
@@ -52,14 +52,14 @@ const initialSettings: SystemSettings = {
 
 4. Anti-Abuse & Security:
 • Automated scripts, bots, or spamming commands will trigger security locks.
-• EarnFlow is a transparent task-based rewards platform. No guaranteed returns or investments.`,
+• InfiniteHits is a transparent task-based rewards platform. No guaranteed returns or investments.`,
 };
 
 const initialTasks: Record<string, Task> = {
   task_1: {
     taskId: 'task_1',
     title: '🌐 Visit Official Website',
-    description: 'Visit the EarnFlow official portal and stay for at least 60 seconds.',
+    description: 'Visit the InfiniteHits official portal and stay for at least 60 seconds.',
     instructions: '1. Click the link below to open the website.\n2. Browse for 60 seconds.\n3. Submit your Telegram username or email used as proof.',
     reward: 2.0,
     estimatedTime: '2 minutes',
@@ -74,7 +74,7 @@ const initialTasks: Record<string, Task> = {
     taskId: 'task_2',
     title: '📢 Join Telegram News Channel',
     description: 'Join our official Telegram Updates Channel to stay informed.',
-    instructions: '1. Join @earnflow_updates channel.\n2. Take a screenshot or send your username as proof.',
+    instructions: '1. Join @infinitehits_updates channel.\n2. Take a screenshot or send your username as proof.',
     reward: 5.0,
     estimatedTime: '1 minute',
     requirements: 'text',
@@ -103,7 +103,7 @@ const initialTasks: Record<string, Task> = {
 const initialAnnouncements: Record<string, Announcement> = {
   ann_1: {
     announcementId: 'ann_1',
-    title: '🚀 Welcome to EarnFlow V3!',
+    title: '🚀 Welcome to InfiniteHits!',
     message: 'We are live! Complete tasks, invite your friends, and withdraw earnings directly to bKash or Nagad. Happy Earning!',
     status: 'published',
     createdAt: new Date().toISOString(),

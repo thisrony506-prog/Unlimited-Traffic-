@@ -1,0 +1,120 @@
+{
+  "users": {
+    "123456789": {
+      "telegramId": 123456789,
+      "username": "johndoe",
+      "firstName": "John",
+      "lastName": "Doe",
+      "referralCode": "EF7894D9T",
+      "balance": 0,
+      "totalEarned": 0,
+      "totalWithdrawn": 0,
+      "pendingWithdrawal": 0,
+      "completedTasks": 0,
+      "totalReferrals": 0,
+      "successfulReferrals": 0,
+      "referralEarnings": 0,
+      "status": "active",
+      "createdAt": "2026-08-31T14:30:12.975Z",
+      "updatedAt": "2026-08-31T14:30:12.975Z"
+    },
+    "8619562932": {
+      "telegramId": 8619562932,
+      "username": "NurulHaque215",
+      "firstName": "Nurul Haque",
+      "referralCode": "EF932LCQK",
+      "balance": 0,
+      "totalEarned": 0,
+      "totalWithdrawn": 0,
+      "pendingWithdrawal": 0,
+      "completedTasks": 0,
+      "totalReferrals": 0,
+      "successfulReferrals": 0,
+      "referralEarnings": 0,
+      "status": "active",
+      "createdAt": "2026-08-31T14:30:45.406Z",
+      "updatedAt": "2026-08-31T14:30:45.406Z"
+    },
+    "8482385832": {
+      "telegramId": 8482385832,
+      "username": "toxicx005",
+      "firstName": "ToxiC-X ツ",
+      "referralCode": "EF832BN4X",
+      "balance": 0,
+      "totalEarned": 0,
+      "totalWithdrawn": 0,
+      "pendingWithdrawal": 0,
+      "completedTasks": 0,
+      "totalReferrals": 0,
+      "successfulReferrals": 0,
+      "referralEarnings": 0,
+      "status": "active",
+      "createdAt": "2026-08-31T15:47:41.121Z",
+      "updatedAt": "2026-08-31T15:47:41.121Z"
+    }
+  },
+  "tasks": {
+    "task_1": {
+      "taskId": "task_1",
+      "title": "🌐 Visit Official Website",
+      "description": "Visit the EarnFlow official portal and stay for at least 60 seconds.",
+      "instructions": "1. Click the link below to open the website.\n2. Browse for 60 seconds.\n3. Submit your Telegram username or email used as proof.",
+      "reward": 2,
+      "estimatedTime": "2 minutes",
+      "requirements": "text",
+      "status": "published",
+      "currentSubmissions": 0,
+      "maximumSubmissions": 500,
+      "createdAt": "2026-08-31T14:29:03.265Z",
+      "expiresAt": "2026-09-30T14:29:03.265Z"
+    },
+    "task_2": {
+      "taskId": "task_2",
+      "title": "📢 Join Telegram News Channel",
+      "description": "Join our official Telegram Updates Channel to stay informed.",
+      "instructions": "1. Join @earnflow_updates channel.\n2. Take a screenshot or send your username as proof.",
+      "reward": 5,
+      "estimatedTime": "1 minute",
+      "requirements": "text",
+      "status": "published",
+      "currentSubmissions": 0,
+      "maximumSubmissions": 1000,
+      "createdAt": "2026-08-31T14:29:03.265Z",
+      "expiresAt": "2026-09-30T14:29:03.265Z"
+    },
+    "task_3": {
+      "taskId": "task_3",
+      "title": "⭐ App Feedback & Review",
+      "description": "Leave honest feedback on our partner Android application.",
+      "instructions": "1. Test the app and share a 2-line helpful feedback.\n2. Upload or type your feedback text below.",
+      "reward": 10,
+      "estimatedTime": "3 minutes",
+      "requirements": "text",
+      "status": "published",
+      "currentSubmissions": 0,
+      "maximumSubmissions": 200,
+      "createdAt": "2026-08-31T14:29:03.265Z",
+      "expiresAt": "2026-09-30T14:29:03.265Z"
+    }
+  },
+  "task_submissions": {},
+  "transactions": {},
+  "withdrawals": {},
+  "referrals": {},
+  "support_tickets": {},
+  "announcements": {
+    "ann_1": {
+      "announcementId": "ann_1",
+      "title": "🚀 Welcome to EarnFlow V3!",
+      "message": "We are live! Complete tasks, invite your friends, and withdraw earnings directly to bKash or Nagad. Happy Earning!",
+      "status": "published",
+      "createdAt": "2026-08-31T14:29:03.265Z"
+    }
+  },
+  "settings": {
+    "minWithdrawal": 100,
+    "referralReward": 10,
+    "supportChatId": "",
+    "rulesText": "📜 EarnFlow Community & Earning Rules\n\n1. Task Completion:\n• Only genuine, complete proof will be approved.\n• Fraudulent or fake screenshots/links will result in instant account suspension.\n• Multiple submissions for the same task are not allowed.\n\n2. Referral Rules:\n• Self-referral using fake/alt Telegram accounts is strictly prohibited.\n• Referral rewards are automatically credited when valid new users join.\n\n3. Withdrawal Policy:\n• Minimum withdrawal amount is ৳100.\n• Payouts supported via bKash and Nagad.\n• Requests are verified and processed within 24-48 hours.\n\n4. Anti-Abuse & Security:\n• Automated scripts, bots, or spamming commands will trigger security locks.\n• EarnFlow is a transparent task-based rewards platform. No guaranteed returns or investments."
+  }
+}

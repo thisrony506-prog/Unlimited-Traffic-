@@ -23,7 +23,7 @@ export const handleSupportContactCallback = async (ctx: Context) => {
   sessionManager.startSupportMessage(ctx.from.id);
 
   await ctx.reply(
-    `📩 *Contact EarnFlow Support*\n\n` +
+    `📩 *Contact InfiniteHits Support*\n\n` +
       `Please type your question or support request detailed below.\n` +
       `Our support agent will review and reply directly to your chat.\n\n` +
       `_Type your message now:_`,
