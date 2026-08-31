@@ -1,23 +1,37 @@
 import { User, Campaign, CreditTransaction, CreditPackage, PaymentMethod } from '../types';
 import { config } from '../config/env';
 
+// Safe number formatter helper to protect against undefined, null, or NaN
+const fmtNum = (val: any): string => {
+  const n = Number(val);
+  return (isNaN(n) ? 0 : n).toLocaleString();
+};
+
 export const formatWelcomeMessage = (firstName: string): string => {
   return (
-    `🚀 *Welcome to InfiniteHits!*\n\n` +
-    `Your account has been created successfully.\n\n` +
-    `🎁 *Welcome Bonus: 50 Credits*\n\n` +
-    `Use your Credits to promote your website or earn more Credits by completing other users' campaigns.`
+    `🚀 *WELCOME TO INFINITEHITS!*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Hello *${firstName || 'User'}*, your account has been successfully initialized on our global Traffic & Ad Rewards Network.\n\n` +
+    `🎁 *Welcome Bonus Credited:* \`+${fmtNum(config.NEW_USER_BONUS)} Credits\`\n\n` +
+    `💡 *What you can do:*\n` +
+    `• 🌐 *Earn Credits:* Visit live websites, watch Monetag ads, and claim daily bonuses.\n` +
+    `• ➕ *Promote Websites:* Launch real traffic campaigns to grow your websites & links.\n` +
+    `• 👥 *Refer Friends:* Earn +100 Credits for every invited user.\n\n` +
+    `👇 *Tap any button below to get started:*`
   );
 };
 
 export const formatMenuMessage = (user: User, todayEarned: number): string => {
   return (
-    `🚀 *InfiniteHits*\n\n` +
-    `👤 *User:* ${user.firstName || 'User'}\n\n` +
-    `💰 *Credits:* ${user.balance.toLocaleString()}\n\n` +
-    `📈 *Today's Earned:* ${todayEarned.toLocaleString()}\n\n` +
-    `👁️ *Traffic Received:* ${user.trafficReceived.toLocaleString()}\n\n` +
-    `👥 *Referrals:* ${user.referralCount.toLocaleString()}`
+    `🚀 *INFINITEHITS CONTROL PANEL*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `👤 *User:* \`${user.firstName || 'User'}\` • \`ID: ${user.telegramId}\`\n` +
+    `💰 *Current Balance:* *${fmtNum(user.balance)} Credits / Tokens*\n` +
+    `📈 *Today's Earnings:* *+${fmtNum(todayEarned)} Credits*\n` +
+    `👁️ *Traffic Received:* *${fmtNum(user.trafficReceived)} Visitors*\n` +
+    `👥 *Total Referrals:* *${fmtNum(user.referralCount ?? (user as any).totalReferrals)} Users*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `⚡ *Quick Actions:* Select an option from the menu below to earn or promote.`
   );
 };
 
@@ -28,23 +42,30 @@ export const formatAvailableCampaign = (campaign: Campaign, remainingVisits: num
   } catch {}
 
   return (
-    `🌐 *Available Campaign*\n\n` +
-    `━━━━━━━━━━━━━━\n\n` +
-    `🌐 *Website:*\n\`${hostname}\`\n\n` +
-    `⏱ *Required Time:*\n${campaign.minimumVisitSeconds} seconds\n\n` +
-    `🎁 *Reward:*\n+${campaign.rewardPerVisit} Credit\n\n` +
-    `👁️ *Remaining:*\n${remainingVisits} Visits`
+    `🌐 *AVAILABLE TRAFFIC CAMPAIGN*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎯 *Target Site:* \`${hostname}\`\n` +
+    `⏱️ *Stay Duration:* *${fmtNum(campaign.minimumVisitSeconds || 20)} Seconds*\n` +
+    `🎁 *Reward per Visit:* \`+${fmtNum(campaign.rewardPerVisit || 1)} Credits\`\n` +
+    `📊 *Remaining Visits:* *${fmtNum(remainingVisits)} Visits*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📌 *Instructions:*\n` +
+    `1. Click *🚀 Visit Website* to open the link.\n` +
+    `2. Stay on the site until the countdown completes.\n` +
+    `3. Return and click *✅ Verify Visit* to receive instant credits!`
   );
 };
 
 export const formatNoCampaignsAvailable = (): string => {
   return (
-    `🌐 *No Active Campaigns Available*\n\n` +
-    `You have reviewed all available campaigns for now or there are no new campaigns right now.\n\n` +
-    `💡 *What you can do:*\n` +
-    `• Check back in a few minutes\n` +
-    `• Create your own campaign under *➕ Promote Website*\n` +
-    `• Claim your *🎁 Daily Bonus* or invite friends via *👥 Referral*`
+    `🌐 *NO ACTIVE CAMPAIGNS AVAILABLE*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `You have completed all currently active traffic campaigns!\n\n` +
+    `💡 *More ways to earn right now:*\n` +
+    `• 📺 *Monetag Ads:* Watch quick video ads for instant *+5 Credits*.\n` +
+    `• 🎁 *Daily Bonus:* Claim your free daily reward.\n` +
+    `• 👥 *Invite Friends:* Earn *+100 Credits* per referral.\n` +
+    `• ➕ *Promote Website:* Add your own website campaign.`
   );
 };
 
@@ -55,102 +76,157 @@ export const formatVisitStarted = (websiteUrl: string, seconds: number): string 
   } catch {}
 
   return (
-    `⏳ *Visit Started*\n\n` +
-    `Please visit the website and stay for the required duration.\n\n` +
-    `🌐 *Target:* \`${hostname}\`\n` +
-    `⏱ *Required time:* ${seconds} seconds\n\n` +
-    `After staying on the site for the full duration, click *Verify Visit* below:`
+    `⏳ *TRAFFIC TASK IN PROGRESS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🌐 *Target Website:* \`${hostname}\`\n` +
+    `⏱️ *Required View Time:* *${fmtNum(seconds)} Seconds*\n\n` +
+    `⚠️ *Important:*\n` +
+    `Please browse the opened site and keep it active for the full *${fmtNum(seconds)}s*. Once finished, tap *Verify Visit* below to claim your reward.`
   );
 };
 
 export const formatVisitVerified = (reward: number, newBalance: number): string => {
   return (
-    `✅ *Visit Verified!*\n\n` +
-    `🎁 *Reward:* +${reward} Credit\n\n` +
-    `💰 *New Balance:* ${newBalance.toLocaleString()} Credits`
+    `✅ *VISIT SUCCESSFULLY VERIFIED!*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎁 *Reward Credited:* \`+${fmtNum(reward)} Credits\`\n` +
+    `💰 *Updated Balance:* *${fmtNum(newBalance)} Credits*\n\n` +
+    `🚀 Keep visiting to accumulate more credits or launch your own campaign!`
   );
 };
 
 export const formatVisitFailed = (error?: string): string => {
   return (
-    `❌ *Visit could not be verified.*\n\n` +
-    `${error || 'Please make sure you stayed on the website for the required duration.'}\n\n` +
-    `No Credit was added.`
+    `❌ *VISIT VERIFICATION FAILED*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Reason: ${error || 'The required stay duration was not met.'}\n\n` +
+    `💡 *Tip:* Ensure you stay on the page until the required timer finishes before clicking verify.`
   );
 };
 
 export const formatPromoteUrlPrompt = (): string => {
   return (
-    `🌐 *Promote Website*\n\n` +
-    `Please send your website URL (e.g. \`https://example.com\`):\n\n` +
+    `➕ *PROMOTE YOUR WEBSITE (ওয়েবসাইট প্রোমোট)*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Drive real, high-retention human visitors to your link or website.\n\n` +
+    `🔗 *Step 1:* Please send your website URL (e.g. \`https://mywebsite.com\`):\n\n` +
     `_Requirements:_\n` +
-    `• Must begin with \`http://\` or \`https://\`\n` +
-    `• Real active website without malware or popups`
+    `• Must start with \`https://\` or \`http://\`\n` +
+    `• Must be an active, accessible site without malicious code or auto-downloads`
   );
 };
 
-export const formatPromoteVisitsPrompt = (url: string, currentBalance: number): string => {
+export const formatPromoteDurationPrompt = (url: string, currentBalance: number): string => {
   return (
-    `🌐 *Website:* \`${url}\`\n\n` +
-    `💰 *Your Balance:* ${currentBalance.toLocaleString()} Credits\n\n` +
-    `👁️ *How many visits do you need?*\n\n` +
-    `_Rate: 1 Visit = 1 Credit_`
+    `➕ *CAMPAIGN CONFIGURATION (ধাপ ২ - সময় নির্বাচন)*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🌐 *Target URL:* \`${url}\`\n` +
+    `💰 *Your Balance:* *${fmtNum(currentBalance)} Credits*\n\n` +
+    `⏱️ *Select Viewer Stay Duration (ভিজিট সময়):*\n` +
+    `Choose how long each visitor must explore your website before earning tokens:\n\n` +
+    `• ⏱ *15s Stay* ➔ *1 Token / Visit* (Quick Visit)\n` +
+    `• ⏱ *30s Stay* ➔ *2 Tokens / Visit* (Standard Engagement)\n` +
+    `• ⏱ *45s Stay* ➔ *3 Tokens / Visit* (High Retention)\n` +
+    `• ⏱ *60s Stay* ➔ *4 Tokens / Visit* (Deep Read)\n` +
+    `• ⏱ *90s Stay* ➔ *6 Tokens / Visit* (Ultra Engagement)\n` +
+    `• ⏱ *120s Stay* ➔ *8 Tokens / Visit* (Maximum Retention)\n\n` +
+    `👇 *Tap a preset button below or send custom seconds (e.g. \`30\`):*`
   );
 };
 
-export const formatCampaignSummary = (url: string, visits: number, cost: number, balance: number): string => {
+export const formatPromoteVisitsPrompt = (
+  url: string,
+  durationSeconds: number,
+  costPerVisit: number,
+  currentBalance: number
+): string => {
   return (
-    `📋 *Campaign Summary*\n\n` +
-    `🌐 *Website:*\n\`${url}\`\n\n` +
-    `👁️ *Visits:*\n${visits.toLocaleString()}\n\n` +
-    `💳 *Cost:*\n${cost.toLocaleString()} Credits\n\n` +
-    `💰 *Your Balance:*\n${balance.toLocaleString()} Credits`
+    `➕ *CAMPAIGN CONFIGURATION (ধাপ ৩ - ভিজিটর সংখ্যা)*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🌐 *Target URL:* \`${url}\`\n` +
+    `⏱️ *Ad Duration:* *${fmtNum(durationSeconds)}s* (${fmtNum(costPerVisit)} Tokens / Visit)\n` +
+    `💰 *Available Balance:* *${fmtNum(currentBalance)} Tokens*\n\n` +
+    `👁️ *How many visitors do you want? (কতগুলো ভিউ চান?)*\n\n` +
+    `Select a quantity preset below or send any number (e.g. \`50\`, \`100\`, \`500\`):`
+  );
+};
+
+export const formatCampaignSummary = (
+  url: string,
+  durationSeconds: number,
+  costPerVisit: number,
+  visits: number,
+  cost: number,
+  balance: number
+): string => {
+  return (
+    `📋 *CAMPAIGN ORDER SUMMARY*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🌐 *Target URL:* \`${url}\`\n` +
+    `⏱️ *Viewer Duration:* *${fmtNum(durationSeconds)} Seconds*\n` +
+    `🎁 *Visitor Reward:* *${fmtNum(costPerVisit)} Token / Visit*\n` +
+    `👁️ *Target Quantity:* *${fmtNum(visits)} Unique Visits*\n` +
+    `💳 *Total Campaign Cost:* \`${fmtNum(cost)} Tokens\` (${fmtNum(visits)} × ${fmtNum(costPerVisit)})\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `💰 *Current Balance:* ${fmtNum(balance)} Tokens\n` +
+    `🪙 *Balance After Order:* ${fmtNum(balance - cost)} Tokens\n\n` +
+    `Confirm to launch this campaign to the live network:`
   );
 };
 
 export const formatInsufficientCredits = (required: number, balance: number): string => {
   return (
-    `❌ *Insufficient Credits*\n\n` +
-    `Required:\n${required.toLocaleString()} Credits\n\n` +
-    `Your Balance:\n${balance.toLocaleString()} Credits`
+    `❌ *INSUFFICIENT CREDITS / TOKENS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Required for this order: \`${fmtNum(required)} Credits\`\n` +
+    `Your current balance: \`${fmtNum(balance)} Credits\`\n` +
+    `Shortage: \`${fmtNum(required - balance)} Credits\`\n\n` +
+    `💡 *How to get more credits:*\n` +
+    `• 💳 Purchase instant credit packages with bKash / Nagad\n` +
+    `• 📺 Watch Monetag Ads for +5 Credits each\n` +
+    `• 🌐 Complete traffic tasks in the Earn menu`
   );
 };
 
 export const formatCampaignCreatedSuccess = (campaign: Campaign, newBalance: number): string => {
   return (
-    `🎉 *Campaign Started Successfully!*\n\n` +
-    `Campaign ID: \`${campaign.campaignId}\`\n` +
-    `🌐 Website: \`${campaign.websiteUrl}\`\n` +
-    `👁️ Target Visits: ${campaign.requiredVisits.toLocaleString()}\n` +
-    `💳 Credits Deducted: ${campaign.cost.toLocaleString()}\n` +
-    `💰 Remaining Balance: ${newBalance.toLocaleString()} Credits\n\n` +
-    `Real users will now visit your site. You can track progress in *📊 My Campaigns*.`
+    `🎉 *CAMPAIGN LAUNCHED SUCCESSFULLY!*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🆔 *Campaign ID:* \`${campaign.campaignId}\`\n` +
+    `🌐 *Website:* \`${campaign.websiteUrl}\`\n` +
+    `👁️ *Target Visits:* *${fmtNum(campaign.requiredVisits)} Visitors*\n` +
+    `💳 *Credits Deducted:* \`-${fmtNum(campaign.cost)} Credits\`\n` +
+    `💰 *New Balance:* \`${fmtNum(newBalance)} Credits\`\n\n` +
+    `🟢 *Status: LIVE & ACTIVE*\n` +
+    `Real users will start viewing your website immediately. You can track or pause your campaign anytime from *📊 My Campaigns*.`
   );
 };
 
 export const formatMyCampaignsOverview = (campaigns: Campaign[]): string => {
   if (campaigns.length === 0) {
     return (
-      `📊 *My Campaigns*\n\n` +
-      `You have not created any website campaigns yet.\n\n` +
-      `Click *➕ Promote Website* to launch your first traffic campaign!`
+      `📊 *MY PROMOTED CAMPAIGNS*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `You currently have no campaigns running.\n\n` +
+      `Click *➕ Promote Website* below to start sending real traffic to your websites!`
     );
   }
 
-  let text = `📊 *My Campaigns*\n\n`;
+  let text = `📊 *MY PROMOTED CAMPAIGNS*\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
   campaigns.forEach((c, idx) => {
     let host = c.websiteUrl;
     try {
       host = new URL(c.websiteUrl).hostname;
     } catch {}
 
-    const statusEmoji = c.status === 'ACTIVE' ? '🟢 ACTIVE' : c.status === 'PAUSED' ? '⏸ PAUSED' : '🏁 COMPLETED';
+    const statusEmoji = c.status === 'ACTIVE' ? '🟢 LIVE' : c.status === 'PAUSED' ? '⏸ PAUSED' : '🏁 COMPLETED';
+    const percent = Math.min(100, Math.round(((c.completedVisits || 0) / (c.requiredVisits || 1)) * 100));
 
     text +=
-      `🌐 *Campaign #${idx + 1}:* \`${host}\`\n` +
-      `Progress: ${c.completedVisits.toLocaleString()} / ${c.requiredVisits.toLocaleString()}\n` +
-      `Remaining: ${c.remainingVisits.toLocaleString()}\n` +
-      `Status: ${statusEmoji}\n\n`;
+      `🌐 *#${idx + 1}: \`${host}\`*\n` +
+      `• Progress: *${fmtNum(c.completedVisits)} / ${fmtNum(c.requiredVisits)}* (${percent}%)\n` +
+      `• Remaining: *${fmtNum(c.remainingVisits)} visits*\n` +
+      `• Status: *${statusEmoji}*\n\n`;
   });
 
   return text.trim();
@@ -161,74 +237,107 @@ export const formatReferralScreen = (user: User): string => {
   const refLink = `https://t.me/${botUser}?start=${user.referralCode}`;
 
   return (
-    `👥 *Referral Program*\n\n` +
-    `Invite friends and earn Credits.\n\n` +
-    `*Your Referrals:*\n${user.referralCount.toLocaleString()}\n\n` +
-    `*Referral Earnings:*\n${user.referralEarnings.toLocaleString()} Credits\n\n` +
-    `*Your Link:*\n\`${refLink}\`\n\n` +
-    `🎁 *Reward:* 100 Credits per qualified friend who completes their first activity!`
+    `👥 *REFERRAL & AFFILIATE REWARDS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Invite friends to InfiniteHits and earn unlimited bonus credits!\n\n` +
+    `📊 *Your Referral Stats:*\n` +
+    `• Total Friends Invited: *${fmtNum(user.referralCount ?? (user as any).totalReferrals)} Users*\n` +
+    `• Total Referral Income: *${fmtNum(user.referralEarnings)} Credits*\n` +
+    `• Reward Rate: *+100 Credits per qualified friend*\n\n` +
+    `🔗 *Your Unique Referral Link:*\n\`${refLink}\`\n\n` +
+    `_Share this link with your friends or social channels to start earning passive credits!_`
   );
 };
 
 export const formatEarnCreditsHub = (): string => {
   return (
-    `🎁 *Ways to Earn Credits*\n\n` +
-    `🌐 *Complete Traffic Tasks*\n` +
-    `Visit top websites and earn instant credits per visit.\n\n` +
-    `👥 *Invite Friends*\n` +
-    `Earn 100 Credits for every friend who joins using your link.\n\n` +
-    `🎉 *Daily Bonus*\n` +
-    `Claim 10 Free Credits every 24 hours.\n\n` +
-    `⭐ *Promotional Rewards*\n` +
-    `Participate in special platform milestones and events.`
+    `🎁 *EARN FREE CREDITS HUB*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Choose from any of our verified reward methods:\n\n` +
+    `📺 *1. Monetag Ads (Mini App)*\n` +
+    `Watch quick sponsor video ads & banners to earn *+${config.MONETAG_REWARD_CREDITS || 5} Credits* per ad.\n\n` +
+    `🌐 *2. Traffic Exchange Tasks*\n` +
+    `Visit partner websites and get instant token rewards per verified visit.\n\n` +
+    `👥 *3. Referral Program*\n` +
+    `Earn *+100 Credits* for every active friend you invite.\n\n` +
+    `🎉 *4. 24h Daily Bonus*\n` +
+    `Claim your free *+10 Credits* every single day!`
+  );
+};
+
+export const formatMonetagAdsScreen = (
+  adsWatchedToday: number,
+  dailyLimit: number,
+  remainingToday: number,
+  rewardPerAd: number,
+  userBalance: number
+): string => {
+  return (
+    `📺 *MONETAG ADS & MINI APP REWARDS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Watch short sponsor ads to earn instant Credits directly to your balance!\n\n` +
+    `🎁 *Reward per Ad:* \`+${fmtNum(rewardPerAd)} Credits\`\n` +
+    `📊 *Today's Completed:* *${fmtNum(adsWatchedToday)} / ${fmtNum(dailyLimit)} Ads*\n` +
+    `⏳ *Remaining Limit Today:* *${fmtNum(remainingToday)} Ads*\n` +
+    `💰 *Your Current Balance:* *${fmtNum(userBalance)} Credits*\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📱 *Option A:* Launch the interactive Telegram Mini App.\n` +
+    `🎬 *Option B:* Tap *Watch Direct Monetag Ad*, view sponsor page, and tap *Claim Reward*!`
   );
 };
 
 export const formatDailyBonusScreen = (canClaim: boolean, nextHours?: number, nextMins?: number): string => {
   if (canClaim) {
     return (
-      `🎁 *Daily Bonus*\n\n` +
-      `Today's reward:\n*+${config.DAILY_BONUS_AMOUNT} Credits*\n\n` +
-      `Click the button below to claim your daily reward!`
+      `🎁 *DAILY BONUS REWARD*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Your 24-hour daily reward is ready to claim!\n\n` +
+      `💎 *Today's Gift:* \`+${config.DAILY_BONUS_AMOUNT} Free Credits\`\n\n` +
+      `Tap *🎁 Claim Bonus* below to collect your reward instantly.`
     );
   }
 
   return (
-    `⏳ *Daily Bonus Already Claimed*\n\n` +
-    `You have already claimed your daily bonus today.\n\n` +
-    `Next bonus available in: *${nextHours || 0}h ${nextMins || 0}m*.\n\n` +
-    `Come back tomorrow for another bonus!`
+    `⏳ *DAILY BONUS ALREADY CLAIMED*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `You have already claimed your reward for today.\n\n` +
+    `⏰ *Next Bonus Unlocks In:* *${nextHours || 0} Hours ${nextMins || 0} Minutes*\n\n` +
+    `💡 In the meantime, you can watch Monetag Ads or visit websites to keep earning credits!`
   );
 };
 
 export const formatDailyBonusClaimed = (amount: number, newBalance: number): string => {
   return (
-    `✅ *Daily Bonus Claimed!*\n\n` +
-    `🎁 *+${amount} Credits*\n\n` +
-    `💰 *New Balance:* ${newBalance.toLocaleString()} Credits\n\n` +
-    `Come back tomorrow for another bonus.`
+    `✅ *DAILY BONUS COLLECTED!*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🎁 *Credited:* \`+${fmtNum(amount)} Credits\`\n` +
+    `💰 *New Total Balance:* *${fmtNum(newBalance)} Credits*\n\n` +
+    `Come back again tomorrow for your next reward!`
   );
 };
 
 export const formatBuyPackagesList = (): string => {
   return (
-    `💳 *Buy Credit Packages*\n\n` +
-    `Get instant traffic credits to scale your website campaigns:\n\n` +
-    `🟢 *Starter:* 500 Credits — ৳50\n` +
-    `🔵 *Popular:* 1,500 Credits — ৳120\n` +
-    `🟣 *Pro:* 5,000 Credits — ৳350\n` +
-    `🔥 *Business:* 10,000 Credits — ৳600\n\n` +
-    `Select a package below to proceed:`
+    `💳 *INSTANT CREDIT PACKAGES*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Scale your website traffic with instant credit top-ups:\n\n` +
+    `🟢 *Starter Package:* \`500 Credits\` ➔ *৳50*\n` +
+    `🔵 *Popular Package:* \`1,500 Credits\` ➔ *৳120* _(Save 20%)_\n` +
+    `🟣 *Pro Growth:* \`5,000 Credits\` ➔ *৳350* _(Best Value)_\n` +
+    `🔥 *Enterprise VIP:* \`10,000 Credits\` ➔ *৳600* _(Max Traffic)_\n\n` +
+    `⚡ *Payment Methods:* bKash & Nagad Personal Send Money (Instant Processing)\n\n` +
+    `👇 *Select a package to continue:*`
   );
 };
 
 export const formatPackageSelected = (pkg: CreditPackage): string => {
   return (
-    `📦 *Package Selected*\n\n` +
-    `Package:\n*${pkg.name}*\n\n` +
-    `Credits:\n*${pkg.credits.toLocaleString()}*\n\n` +
-    `Price:\n*৳${pkg.price}*\n\n` +
-    `Choose payment method:`
+    `📦 *PACKAGE ORDER DETAILS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `• Package: *${pkg.name}*\n` +
+    `• Total Credits: \`+${fmtNum(pkg.credits)} Credits\`\n` +
+    `• Price: *৳${fmtNum(pkg.price)} BDT*\n\n` +
+    `👇 *Select your preferred payment gateway:*`
   );
 };
 
@@ -236,59 +345,69 @@ export const formatPaymentInstructions = (pkg: CreditPackage, method: PaymentMet
   const number = method === 'bKash' ? config.PAYMENT_BKASH_NUMBER : config.PAYMENT_NAGAD_NUMBER;
 
   return (
-    `💳 *Payment Instructions*\n\n` +
-    `Send *৳${pkg.price}* to:\n\n` +
-    `Payment Method: *${method}*\n` +
-    `Payment Number:\n\`${number}\`\n\n` +
-    `Reference:\n\`${reference}\`\n\n` +
-    `After completing the payment, click *I Have Paid* below to enter your Transaction ID:`
+    `💳 *PAYMENT INSTRUCTIONS (${method.toUpperCase()})*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `1. Open your *${method}* App.\n` +
+    `2. Select *Send Money*.\n` +
+    `3. Send exactly *৳${fmtNum(pkg.price)}* to:\n\n` +
+    `📱 *${method} Number:*\n\`${number}\`\n\n` +
+    `📝 *Reference Code:*\n\`${reference}\`\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `4. Copy the *Transaction ID (TrxID)* from the SMS/App.\n` +
+    `5. Click *✅ I Have Paid* below to submit your TrxID for instant verification.`
   );
 };
 
 export const formatPaymentPromptTrxId = (): string => {
   return (
-    `✍️ *Enter Transaction ID / Reference*\n\n` +
+    `✍️ *SUBMIT TRANSACTION ID (TrxID)*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     `Please type and send the Transaction ID (TrxID) you received after sending the payment (e.g. \`9K8L2M3N4P\`):\n\n` +
-    `_Type your Transaction ID now:_`
+    `_Send your Transaction ID now:_`
   );
 };
 
 export const formatPaymentSubmittedPending = (paymentId: string, pkgName: string, amount: number, trxId: string): string => {
   const supportUser = config.SUPPORT_USERNAME;
   return (
-    `⏳ *Payment Submitted & Pending Verification*\n\n` +
-    `Payment ID: \`${paymentId}\`\n` +
-    `Package: *${pkgName}*\n` +
-    `Amount: *৳${amount}*\n` +
-    `TrxID: \`${trxId}\`\n` +
-    `Status: 🟡 *PENDING*\n\n` +
-    `Your transaction has been securely logged. Once confirmed by our gateway/support team, the credits will be added to your balance.\n\n` +
-    `For any queries, please reach out to @${supportUser}.`
+    `⏳ *PAYMENT SUBMITTED FOR VERIFICATION*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🆔 *Payment ID:* \`${paymentId}\`\n` +
+    `📦 *Package:* *${pkgName}*\n` +
+    `💵 *Amount:* *৳${fmtNum(amount)} BDT*\n` +
+    `🔢 *TrxID:* \`${trxId}\`\n` +
+    `🟡 *Status:* *PENDING APPROVAL*\n\n` +
+    `Your transaction has been securely logged. Credits will be automatically credited to your balance upon verification.\n\n` +
+    `💬 Need fast assistance? Contact @${supportUser}.`
   );
 };
 
 export const formatBalanceScreen = (user: User, todayEarned: number, todaySpent: number): string => {
   return (
-    `💰 *Your Balance*\n\n` +
-    `*Available Credits:*\n${user.balance.toLocaleString()}\n\n` +
-    `*Earned Today:*\n${todayEarned.toLocaleString()}\n\n` +
-    `*Spent Today:*\n${todaySpent.toLocaleString()}\n\n` +
-    `*Total Earned:*\n${user.totalEarned.toLocaleString()}\n\n` +
-    `*Total Spent:*\n${user.totalSpent.toLocaleString()}`
+    `💰 *FINANCIAL BALANCE OVERVIEW*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `💎 *Available Balance:* \`${fmtNum(user.balance)} Credits / Tokens\`\n\n` +
+    `📈 *Today's Earnings:* \`+${fmtNum(todayEarned)} Credits\`\n` +
+    `📉 *Today's Spent:* \`-${fmtNum(todaySpent)} Credits\`\n` +
+    `🏆 *Lifetime Earned:* \`${fmtNum(user.totalEarned)} Credits\`\n` +
+    `💳 *Lifetime Spent:* \`${fmtNum(user.totalSpent)} Credits\`\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `Use your credits to drive visitors or purchase more packages below:`
   );
 };
 
 export const formatStatisticsScreen = (user: User, activeCampaignsCount: number, completedCampaignsCount: number): string => {
   return (
-    `📊 *Your Statistics*\n\n` +
-    `👁️ *Traffic Received:*\n${user.trafficReceived.toLocaleString()}\n\n` +
-    `🌐 *Traffic Provided:*\n${user.trafficProvided.toLocaleString()}\n\n` +
-    `💰 *Credits Earned:*\n${user.totalEarned.toLocaleString()}\n\n` +
-    `💳 *Credits Spent:*\n${user.totalSpent.toLocaleString()}\n\n` +
-    `👥 *Referrals:*\n${user.referralCount.toLocaleString()}\n\n` +
-    `🎁 *Referral Earnings:*\n${user.referralEarnings.toLocaleString()}\n\n` +
-    `🌐 *Active Campaigns:*\n${activeCampaignsCount.toLocaleString()}\n\n` +
-    `🌐 *Completed Campaigns:*\n${completedCampaignsCount.toLocaleString()}`
+    `📊 *ACCOUNT PERFORMANCE STATS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `👁️ *Traffic Received on Sites:* *${fmtNum(user.trafficReceived)} Visitors*\n` +
+    `🌐 *Traffic Tasks Completed:* *${fmtNum(user.trafficProvided)} Visits*\n` +
+    `💰 *Total Credits Earned:* *${fmtNum(user.totalEarned)}*\n` +
+    `💳 *Total Credits Spent:* *${fmtNum(user.totalSpent)}*\n` +
+    `👥 *Referrals Joined:* *${fmtNum(user.referralCount ?? (user as any).totalReferrals)} Users*\n` +
+    `🎁 *Referral Commissions:* *${fmtNum(user.referralEarnings)} Credits*\n` +
+    `🟢 *Active Campaigns:* *${fmtNum(activeCampaignsCount)}*\n` +
+    `🏁 *Completed Campaigns:* *${fmtNum(completedCampaignsCount)}*`
   );
 };
 
@@ -300,19 +419,22 @@ export const formatHistoryScreen = (
 ): string => {
   if (transactions.length === 0) {
     return (
-      `📜 *Credit History*\n\n` +
-      `No transactions recorded yet.\n\n` +
-      `Start visiting campaigns or claim your daily bonus to see your credit history!`
+      `📜 *CREDIT TRANSACTION HISTORY*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `No activity recorded yet.\n\n` +
+      `Earn or spend credits to see your live audit log here!`
     );
   }
 
-  let text = `📜 *Credit History* (Page ${page}/${totalPages} • Total: ${totalCount})\n\n`;
+  let text = `📜 *CREDIT TRANSACTION HISTORY*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📄 *Page ${fmtNum(page)} of ${fmtNum(totalPages)}* (Total: ${fmtNum(totalCount)} records)\n\n`;
 
   transactions.forEach((tx) => {
-    const isGain = tx.amount >= 0;
-    const signEmoji = isGain ? '🟢 +' : '🔴 ';
-    const formattedAmount = isGain ? tx.amount.toLocaleString() : Math.abs(tx.amount).toLocaleString();
-    const dateStr = new Date(tx.createdAt).toLocaleDateString([], {
+    const isGain = (tx.amount ?? 0) >= 0;
+    const signEmoji = isGain ? '🟢 +' : '🔴 -';
+    const formattedAmount = isGain ? fmtNum(tx.amount) : fmtNum(Math.abs(tx.amount));
+    const dateStr = new Date(tx.createdAt || Date.now()).toLocaleDateString([], {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -320,105 +442,93 @@ export const formatHistoryScreen = (
       minute: '2-digit',
     });
 
-    text += `${signEmoji}${formattedAmount}\n${tx.description} • ${dateStr}\n\n`;
+    text += `${signEmoji}*${formattedAmount} Credits* • \`${tx.type || 'Transaction'}\`\n_${tx.description || 'Activity'}_ • ${dateStr}\n\n`;
   });
 
   return text.trim();
 };
 
 export const formatProfileScreen = (user: User): string => {
-  const createdDate = new Date(user.createdAt).toLocaleDateString([], {
+  const createdDate = new Date(user.createdAt || Date.now()).toLocaleDateString([], {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
 
   return (
-    `👤 *Profile*\n\n` +
-    `*Name:* ${user.firstName} ${user.lastName || ''}\n` +
-    `*Username:* ${user.username ? '@' + user.username : 'Not set'}\n` +
-    `*User ID:* \`${user.telegramId}\`\n` +
-    `*Account Created:* ${createdDate}\n` +
-    `*Credits:* ${user.balance.toLocaleString()}\n` +
-    `*Referrals:* ${user.referralCount.toLocaleString()}\n` +
-    `*Total Earned:* ${user.totalEarned.toLocaleString()}\n` +
-    `*Total Spent:* ${user.totalSpent.toLocaleString()}`
+    `👤 *USER PROFILE & DETAILS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `• *Full Name:* ${user.firstName || 'User'} ${user.lastName || ''}\n` +
+    `• *Username:* ${user.username ? '@' + user.username : 'None'}\n` +
+    `• *Telegram ID:* \`${user.telegramId}\`\n` +
+    `• *Member Since:* ${createdDate}\n` +
+    `• *Current Balance:* *${fmtNum(user.balance)} Credits*\n` +
+    `• *Invited Users:* *${fmtNum(user.referralCount ?? (user as any).totalReferrals)}*\n` +
+    `• *Total Earned:* *${fmtNum(user.totalEarned)} Credits*`
   );
 };
 
 export const formatSupportScreen = (): string => {
   const supportUser = config.SUPPORT_USERNAME;
   return (
-    `🎧 *Support & Help Desk*\n\n` +
-    `Need help with traffic exchange, campaigns, or credit packages?\n\n` +
-    `• Official Support: @${supportUser}\n` +
-    `• Check out frequently asked questions under *❓ FAQ*.\n\n` +
-    `Choose an option below:`
+    `🎧 *SUPPORT & HELPDESK*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Have questions or need manual verification assistance?\n\n` +
+    `• 👨‍💼 *Official Telegram Admin:* @${supportUser}\n` +
+    `• ⏱ *Support Hours:* 24/7 Rapid Response\n` +
+    `• ❓ *Frequently Asked Questions:* Check the FAQ section below\n\n` +
+    `👇 *Select a topic or contact support:*`
   );
 };
 
 export const FAQ_ITEMS = [
   {
     id: 'faq_1',
-    title: 'What are Credits?',
+    title: 'What are Credits / Tokens?',
     answer:
-      `💰 *What are Credits?*\n\n` +
-      `Credits are the internal platform currency in InfiniteHits. You use Credits to promote your website to real users. 1 Credit equals 1 unique website visit.`,
+      `💰 *What are Credits / Tokens?*\n\n` +
+      `Credits are the internal platform currency in InfiniteHits. 1 Credit corresponds to 1 real, verified visit to your website campaign.`,
   },
   {
     id: 'faq_2',
     title: 'How do I earn Credits?',
     answer:
       `🎁 *How do I earn Credits?*\n\n` +
-      `You can earn free credits by:\n` +
-      `1. Visiting other users' websites under *🌐 Get Traffic* (+1 credit per visit)\n` +
-      `2. Claiming your *🎁 Daily Bonus* (+10 credits every 24 hours)\n` +
-      `3. Inviting friends with your *👥 Referral link* (+100 credits per active referral)\n` +
-      `4. Purchasing credit packages with bKash/Nagad`,
+      `1. 🌐 *Traffic Tasks:* Visit websites for +1 to +8 Credits.\n` +
+      `2. 📺 *Monetag Ads:* Watch sponsored video ads for +5 Credits.\n` +
+      `3. 🎁 *Daily Bonus:* Collect +10 Credits every 24 hours.\n` +
+      `4. 👥 *Referrals:* Earn +100 Credits for every friend who joins!`,
   },
   {
     id: 'faq_3',
-    title: 'How do I get traffic?',
-    answer:
-      `🌐 *How do I get traffic?*\n\n` +
-      `Click *➕ Promote Website*, send your valid website URL, and choose how many visits you want. Your campaign goes live immediately to all active Telegram users.`,
-  },
-  {
-    id: 'faq_4',
     title: 'How do I promote my website?',
     answer:
       `➕ *How do I promote my website?*\n\n` +
       `1. Tap *➕ Promote Website*\n` +
       `2. Send your website link (e.g. \`https://mywebsite.com\`)\n` +
-      `3. Select the package amount (50 to 5,000 visits)\n` +
-      `4. Confirm campaign creation`,
+      `3. Select duration & target visitors (15s to 120s)\n` +
+      `4. Confirm campaign to go live instantly!`,
+  },
+  {
+    id: 'faq_4',
+    title: 'How does the Monetag Ad reward work?',
+    answer:
+      `📺 *How does Monetag Ad reward work?*\n\n` +
+      `Open the Mini App, tap *Watch*, view the 10-second sponsor ad, and the reward (+5 Credits) is immediately credited to your balance. You can watch up to 20 ads per day!`,
   },
   {
     id: 'faq_5',
-    title: 'How does referral work?',
+    title: 'How do I buy Credits with bKash/Nagad?',
     answer:
-      `👥 *How does referral work?*\n\n` +
-      `Share your personal referral link with friends. When they start the bot and complete their first activity (visit a website or claim daily bonus), you automatically receive 100 Credits!`,
+      `💳 *How do I buy Credits?*\n\n` +
+      `Go to *💳 Buy Credits*, pick your package, choose bKash or Nagad, send money to the provided number with your reference code, and submit your Transaction ID (TrxID).`,
   },
   {
     id: 'faq_6',
-    title: 'How do I buy Credits?',
-    answer:
-      `💳 *How do I buy Credits?*\n\n` +
-      `Tap *💳 Buy Credits*, select from Starter (500), Popular (1500), Pro (5000), or Business (10000), choose bKash or Nagad, and send the payment with your reference code.`,
-  },
-  {
-    id: 'faq_7',
-    title: 'Why was my traffic reward rejected?',
-    answer:
-      `⚠️ *Why was my traffic reward rejected?*\n\n` +
-      `Rewards require spending at least 20 seconds on the website. If you click Verify Visit before the required time or duplicate visits rapidly, verification will fail.`,
-  },
-  {
-    id: 'faq_8',
-    title: 'How long does payment verification take?',
+    title: 'How long does payment approval take?',
     answer:
       `⏳ *How long does payment verification take?*\n\n` +
-      `Manual payment confirmations are verified and credited within 10 to 60 minutes. You can contact @${config.SUPPORT_USERNAME} anytime if you need immediate processing.`,
+      `Manual payment confirmations are verified within 5 to 30 minutes. Contact @${config.SUPPORT_USERNAME} anytime for instant expedited verification.`,
   },
 ];
+

@@ -150,8 +150,37 @@ class DatabaseService {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
+
+        // Sanitize users to ensure all expected properties are properly typed and never undefined/null
+        const rawUsers = parsed.users || {};
+        const sanitizedUsers: Record<string, User> = {};
+        for (const [key, u] of Object.entries(rawUsers)) {
+          const user = u as any;
+          sanitizedUsers[key] = {
+            userId: user.userId || `usr_${user.telegramId || key}`,
+            telegramId: Number(user.telegramId || key),
+            firstName: user.firstName || 'User',
+            lastName: user.lastName,
+            username: user.username,
+            balance: Number(user.balance ?? 0),
+            referralCode: user.referralCode || ('IH' + Math.random().toString(36).substring(2, 7).toUpperCase()),
+            referredBy: user.referredBy,
+            totalEarned: Number(user.totalEarned ?? user.balance ?? 0),
+            totalSpent: Number(user.totalSpent ?? 0),
+            trafficReceived: Number(user.trafficReceived ?? 0),
+            trafficProvided: Number(user.trafficProvided ?? user.completedTasks ?? 0),
+            referralCount: Number(user.referralCount ?? user.totalReferrals ?? 0),
+            referralEarnings: Number(user.referralEarnings ?? 0),
+            lastDailyBonus: user.lastDailyBonus,
+            status: user.status || 'active',
+            createdAt: user.createdAt || new Date().toISOString(),
+            lastActiveAt: user.lastActiveAt || user.updatedAt || new Date().toISOString(),
+            firstActionCompleted: Boolean(user.firstActionCompleted),
+          };
+        }
+
         this.memoryDb = {
-          users: parsed.users || {},
+          users: sanitizedUsers,
           campaigns: { ...initialCampaigns, ...(parsed.campaigns || {}) },
           campaign_visits: parsed.campaign_visits || {},
           credit_transactions: parsed.credit_transactions || {},
@@ -192,7 +221,17 @@ class DatabaseService {
 
   // --- USERS ---
   public getUser(telegramId: number): User | null {
-    return this.memoryDb.users[telegramId.toString()] || null;
+    const user = this.memoryDb.users[telegramId.toString()];
+    if (!user) return null;
+    // Normalize properties defensively
+    user.balance = Number(user.balance ?? 0);
+    user.totalEarned = Number(user.totalEarned ?? 0);
+    user.totalSpent = Number(user.totalSpent ?? 0);
+    user.trafficReceived = Number(user.trafficReceived ?? 0);
+    user.trafficProvided = Number(user.trafficProvided ?? 0);
+    user.referralCount = Number(user.referralCount ?? 0);
+    user.referralEarnings = Number(user.referralEarnings ?? 0);
+    return user;
   }
 
   public getUserByRefCode(code: string): User | null {
@@ -214,6 +253,13 @@ class DatabaseService {
       existing.firstName = firstName || existing.firstName;
       existing.lastName = lastName || existing.lastName;
       existing.username = username || existing.username;
+      existing.balance = Number(existing.balance ?? 0);
+      existing.totalEarned = Number(existing.totalEarned ?? 0);
+      existing.totalSpent = Number(existing.totalSpent ?? 0);
+      existing.trafficReceived = Number(existing.trafficReceived ?? 0);
+      existing.trafficProvided = Number(existing.trafficProvided ?? 0);
+      existing.referralCount = Number(existing.referralCount ?? 0);
+      existing.referralEarnings = Number(existing.referralEarnings ?? 0);
       existing.lastActiveAt = new Date().toISOString();
       this.persist();
       return { user: existing, isNew: false, welcomeBonusGiven: false };
@@ -483,6 +529,100 @@ class DatabaseService {
     };
   }
 
+  // --- MONETAG ADS MINI APP REWARDS ---
+  public getMonetagStats(userId: number): {
+    adsWatchedToday: number;
+    dailyLimit: number;
+    remainingToday: number;
+    rewardPerAd: number;
+    totalEarnedFromAds: number;
+  } {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
+
+    const allTx = Object.values(this.memoryDb.credit_transactions).filter(
+      (t) => t.userId === userId && t.type === 'monetag_ad_reward'
+    );
+
+    const adsWatchedToday = allTx.filter(
+      (t) => new Date(t.createdAt).getTime() >= todayStartMs
+    ).length;
+
+    const totalEarnedFromAds = allTx.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const dailyLimit = config.MONETAG_DAILY_LIMIT || 20;
+    const remainingToday = Math.max(0, dailyLimit - adsWatchedToday);
+    const rewardPerAd = config.MONETAG_REWARD_CREDITS || 5;
+
+    return {
+      adsWatchedToday,
+      dailyLimit,
+      remainingToday,
+      rewardPerAd,
+      totalEarnedFromAds,
+    };
+  }
+
+  public claimMonetagAdReward(
+    userId: number,
+    adType: string = 'rewarded_interstitial',
+    rewardAmount?: number
+  ): {
+    success: boolean;
+    amount?: number;
+    newBalance?: number;
+    adsWatchedToday?: number;
+    remainingToday?: number;
+    error?: string;
+  } {
+    const user = this.memoryDb.users[userId.toString()];
+    if (!user) return { success: false, error: 'User not found' };
+
+    const stats = this.getMonetagStats(userId);
+    if (stats.remainingToday <= 0) {
+      return {
+        success: false,
+        error: `Daily limit reached! You have watched ${stats.dailyLimit}/${stats.dailyLimit} ads today. Come back tomorrow!`,
+        adsWatchedToday: stats.adsWatchedToday,
+        remainingToday: 0,
+      };
+    }
+
+    const reward = rewardAmount ?? stats.rewardPerAd;
+    user.balance += reward;
+    user.totalEarned += reward;
+
+    const adTypeLabel =
+      adType === 'rewarded_interstitial'
+        ? '🎬 Rewarded Interstitial'
+        : adType === 'in_page_push'
+        ? '💎 In-Page Ad'
+        : adType === 'smartlink'
+        ? '⚡ SmartLink Ad'
+        : '📺 Monetag Ad';
+
+    this.recordTransaction({
+      userId,
+      amount: reward,
+      type: 'monetag_ad_reward',
+      description: `${adTypeLabel} (+${reward} Credits)`,
+      status: 'completed',
+    });
+
+    this.checkAndQualifyReferral(userId);
+    this.persist();
+
+    const updatedStats = this.getMonetagStats(userId);
+
+    return {
+      success: true,
+      amount: reward,
+      newBalance: user.balance,
+      adsWatchedToday: updatedStats.adsWatchedToday,
+      remainingToday: updatedStats.remainingToday,
+    };
+  }
+
   // --- CAMPAIGNS ---
   public getActiveCampaigns(visitorUserId: number): Campaign[] {
     const now = Date.now();
@@ -522,12 +662,14 @@ class DatabaseService {
     ownerUserId: number,
     ownerName: string,
     websiteUrl: string,
-    requiredVisits: number
+    requiredVisits: number,
+    minimumVisitSeconds: number = 15,
+    costPerVisit: number = 1
   ): { success: boolean; campaign?: Campaign; error?: string } {
     const user = this.memoryDb.users[ownerUserId.toString()];
     if (!user) return { success: false, error: 'User not found' };
 
-    const cost = requiredVisits * config.VISIT_COST_PER_UNIT;
+    const cost = requiredVisits * costPerVisit;
     if (user.balance < cost) {
       return { success: false, error: 'Insufficient Credits' };
     }
@@ -537,7 +679,7 @@ class DatabaseService {
       ownerUserId,
       cost,
       'campaign_create',
-      `➕ Promoted ${websiteUrl} (${requiredVisits} visits)`
+      `➕ Promoted ${websiteUrl} (${requiredVisits} visits @ ${minimumVisitSeconds}s)`
     );
 
     if (!deductRes.success) {
@@ -556,8 +698,8 @@ class DatabaseService {
       completedVisits: 0,
       remainingVisits: requiredVisits,
       cost,
-      minimumVisitSeconds: config.MIN_VISIT_SECONDS,
-      rewardPerVisit: config.REWARD_PER_VISIT,
+      minimumVisitSeconds: minimumVisitSeconds || 15,
+      rewardPerVisit: costPerVisit || 1,
       status: 'ACTIVE',
       createdAt: now,
       updatedAt: now,

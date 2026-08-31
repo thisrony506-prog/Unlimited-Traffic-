@@ -21,6 +21,13 @@ export const config = {
   PAYMENT_BKASH_NUMBER: process.env.PAYMENT_BKASH_NUMBER || '01700000000',
   PAYMENT_NAGAD_NUMBER: process.env.PAYMENT_NAGAD_NUMBER || '01800000000',
 
+  // Monetag Ads Mini App Settings
+  MONETAG_ZONE_ID: process.env.MONETAG_ZONE_ID || '8839201',
+  MONETAG_DIRECT_LINK: process.env.MONETAG_DIRECT_LINK || 'https://otieuwou.com/4/8839201',
+  MONETAG_TAG_URL: process.env.MONETAG_TAG_URL || '//kulroakonsu.net/88/tag.min.js',
+  MONETAG_REWARD_CREDITS: Number(process.env.MONETAG_REWARD_CREDITS) || 5,
+  MONETAG_DAILY_LIMIT: Number(process.env.MONETAG_DAILY_LIMIT) || 20,
+
   // Firebase
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || '',
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || '',

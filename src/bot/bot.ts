@@ -8,6 +8,7 @@ import {
 } from '../handlers/trafficHandler';
 import {
   handlePromoteStart,
+  handlePromoteDurationSelected,
   handlePromoteVisitsSelected,
   handlePromoteConfirmCallback,
   handlePromoteCancelCallback,
@@ -19,6 +20,8 @@ import {
 } from '../handlers/myCampaignsHandler';
 import {
   handleEarnHub,
+  handleMonetagAdsScreen,
+  handleMonetagClaimRewardCallback,
   handleDailyBonusScreen,
   handleDailyBonusClaimCallback,
 } from '../handlers/earnHandler';
@@ -60,23 +63,9 @@ export function clearCapturedResponses() {
 
 export function createTelegramBot(): Bot {
   const token = config.TELEGRAM_BOT_TOKEN;
-  const bot = new Bot(token, {
-    botInfo: {
-      id: 8864392110,
-      is_bot: true,
-      first_name: 'InfiniteHits Bot',
-      username: config.BOT_USERNAME || 'InfiniteHits_bot',
-      can_join_groups: true,
-      can_read_all_group_messages: false,
-      supports_inline_queries: false,
-      can_connect_to_business: false,
-      has_main_web_app: false,
-      has_topics_enabled: false,
-      allows_users_to_create_topics: false,
-    } as any,
-  });
+  const bot = new Bot(token);
 
-  // Install API transformer to intercept outgoing Telegram API calls for preview simulator
+  // Install API transformer to intercept outgoing Telegram API calls for preview simulator & graceful fallbacks
   bot.api.config.use(async (prev, method, payload, signal) => {
     if (method === 'sendMessage' || method === 'editMessageText') {
       const payloadObj = payload as any;
@@ -99,6 +88,19 @@ export function createTelegramBot(): Bot {
     } catch (err: any) {
       const errorMsg = String(err?.message || err?.description || '');
       const errorCode = err?.error_code || 400;
+
+      // If Telegram rejects markdown due to special characters, retry with plain text (removing parse_mode)
+      if (
+        (method === 'sendMessage' || method === 'editMessageText') &&
+        (errorMsg.includes("can't parse entities") || errorMsg.includes('parse error') || errorMsg.includes('entity'))
+      ) {
+        try {
+          const plainPayload = { ...(payload as any) };
+          delete plainPayload.parse_mode;
+          res = await prev(method, plainPayload, signal);
+          return res;
+        } catch {}
+      }
 
       if (
         errorCode === 400 ||
@@ -152,7 +154,7 @@ export function createTelegramBot(): Bot {
   // Global Error Handler
   bot.catch((err) => {
     const ctx = err.ctx;
-    console.error(`Error handling update ${ctx.update?.update_id}:`, err.error);
+    console.error(`[GrammY Error] Handling update ${ctx.update?.update_id}:`, err.error);
   });
 
   // --- COMMANDS ---
@@ -199,6 +201,8 @@ export function createTelegramBot(): Bot {
   bot.callbackQuery('nav_support', handleSupport);
   bot.callbackQuery('nav_my_campaigns', handleMyCampaigns);
   bot.callbackQuery('nav_daily_bonus', handleDailyBonusScreen);
+  bot.callbackQuery('nav_monetag_ads', handleMonetagAdsScreen);
+  bot.callbackQuery('monetag_claim_reward', handleMonetagClaimRewardCallback);
 
   bot.callbackQuery('traffic_next', handleGetTraffic);
   bot.callbackQuery('promote_confirm_yes', handlePromoteConfirmCallback);
@@ -223,6 +227,14 @@ export function createTelegramBot(): Bot {
     if (data.startsWith('visit_verify_')) {
       const visitId = data.replace('visit_verify_', '');
       await handleVerifyVisitCallback(ctx, visitId);
+      return;
+    }
+
+    // Promote duration (seconds) selection
+    if (data.startsWith('promote_duration_')) {
+      const secStr = data.replace('promote_duration_', '');
+      const seconds = parseInt(secStr, 10) || 15;
+      await handlePromoteDurationSelected(ctx, seconds);
       return;
     }
 

@@ -1,6 +1,7 @@
 import { Context } from 'grammy';
 import { db } from '../database/db';
 import {
+  promoteDurationInlineKeyboard,
   promoteVisitsInlineKeyboard,
   promoteConfirmInlineKeyboard,
   insufficientCreditsInlineKeyboard,
@@ -8,6 +9,7 @@ import {
 } from '../keyboards';
 import {
   formatPromoteUrlPrompt,
+  formatPromoteDurationPrompt,
   formatPromoteVisitsPrompt,
   formatCampaignSummary,
   formatInsufficientCredits,
@@ -75,14 +77,14 @@ export const handlePromoteUrlReceived = async (ctx: Context, urlInput: string) =
   const user = db.getUser(telegramId);
   const balance = user?.balance || 0;
 
-  const promptText = formatPromoteVisitsPrompt(rawUrl, balance);
-  await ctx.reply(promptText, {
+  const durationPromptText = formatPromoteDurationPrompt(rawUrl, balance);
+  await ctx.reply(durationPromptText, {
     parse_mode: 'Markdown',
-    reply_markup: promoteVisitsInlineKeyboard,
+    reply_markup: promoteDurationInlineKeyboard,
   });
 };
 
-export const handlePromoteVisitsSelected = async (ctx: Context, visits: number) => {
+export const handlePromoteDurationSelected = async (ctx: Context, seconds: number, costPerVisit?: number) => {
   if (!ctx.from) return;
 
   const telegramId = ctx.from.id;
@@ -97,10 +99,48 @@ export const handlePromoteVisitsSelected = async (ctx: Context, visits: number) 
     return;
   }
 
+  // Calculate rate: 1 token per 15s (15s=1, 30s=2, 45s=3, 60s=4, 90s=6, 120s=8)
+  const calcRate = costPerVisit ?? Math.max(1, Math.ceil(seconds / 15));
+  sessionManager.setPromoteDuration(telegramId, seconds, calcRate);
+
+  const user = db.getUser(telegramId);
+  const balance = user?.balance || 0;
+
+  const promptText = formatPromoteVisitsPrompt(url, seconds, calcRate, balance);
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(promptText, {
+      parse_mode: 'Markdown',
+      reply_markup: promoteVisitsInlineKeyboard,
+    });
+  } else {
+    await ctx.reply(promptText, {
+      parse_mode: 'Markdown',
+      reply_markup: promoteVisitsInlineKeyboard,
+    });
+  }
+};
+
+export const handlePromoteVisitsSelected = async (ctx: Context, visits: number) => {
+  if (!ctx.from) return;
+
+  const telegramId = ctx.from.id;
+  const session = sessionManager.getSession(telegramId);
+  const url = session.promoteUrl;
+  const durationSeconds = session.promoteDurationSeconds || 15;
+  const costPerVisit = session.promoteCostPerVisit || 1;
+
+  if (!url) {
+    await ctx.reply('❌ Session expired. Please start over with *➕ Promote Website*.', {
+      parse_mode: 'Markdown',
+      reply_markup: backToMainInlineKeyboard,
+    });
+    return;
+  }
+
   sessionManager.setPromoteVisits(telegramId, visits);
   const user = db.getUser(telegramId);
   const balance = user?.balance || 0;
-  const cost = visits * config.VISIT_COST_PER_UNIT;
+  const cost = visits * costPerVisit;
 
   if (balance < cost) {
     const insufficientText = formatInsufficientCredits(cost, balance);
@@ -118,7 +158,7 @@ export const handlePromoteVisitsSelected = async (ctx: Context, visits: number) 
     return;
   }
 
-  const summaryText = formatCampaignSummary(url, visits, cost, balance);
+  const summaryText = formatCampaignSummary(url, durationSeconds, costPerVisit, visits, cost, balance);
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(summaryText, {
@@ -140,6 +180,8 @@ export const handlePromoteConfirmCallback = async (ctx: Context) => {
   const session = sessionManager.getSession(telegramId);
   const url = session.promoteUrl;
   const visits = session.promoteVisits;
+  const durationSeconds = session.promoteDurationSeconds || 15;
+  const costPerVisit = session.promoteCostPerVisit || 1;
 
   if (!url || !visits) {
     await ctx.reply('❌ Session expired. Please start over.', {
@@ -150,7 +192,7 @@ export const handlePromoteConfirmCallback = async (ctx: Context) => {
   }
 
   const ownerName = `${ctx.from.first_name || ''} ${ctx.from.last_name || ''}`.trim() || 'Advertiser';
-  const createRes = db.createCampaign(telegramId, ownerName, url, visits);
+  const createRes = db.createCampaign(telegramId, ownerName, url, visits, durationSeconds, costPerVisit);
 
   sessionManager.clearSession(telegramId);
 

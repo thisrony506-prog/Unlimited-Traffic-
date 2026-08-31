@@ -31,7 +31,19 @@ class SessionManager {
   }
 
   public setPromoteUrl(userId: number, url: string) {
-    this.setStep(userId, 'promote_select_visits', { promoteUrl: url });
+    this.setStep(userId, 'promote_select_duration', {
+      promoteUrl: url,
+      promoteDurationSeconds: 15,
+      promoteCostPerVisit: 1,
+    });
+  }
+
+  public setPromoteDuration(userId: number, durationSeconds: number, costPerVisit: number) {
+    const s = this.getSession(userId);
+    s.promoteDurationSeconds = durationSeconds;
+    s.promoteCostPerVisit = costPerVisit;
+    s.step = 'promote_select_visits';
+    this.sessions.set(userId, s);
   }
 
   public setPromoteVisits(userId: number, visits: number) {

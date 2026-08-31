@@ -69,16 +69,32 @@ export const visitCompletedInlineKeyboard = new InlineKeyboard()
   .text('🏠 Main Menu', 'nav_main');
 
 /**
+ * Promote Website: Select Duration (Seconds)
+ */
+export const promoteDurationInlineKeyboard = new InlineKeyboard()
+  .text('⏱ 15s (1 Token/Visit)', 'promote_duration_15')
+  .text('⏱ 30s (2 Tokens/Visit)', 'promote_duration_30')
+  .row()
+  .text('⏱ 45s (3 Tokens/Visit)', 'promote_duration_45')
+  .text('⏱ 60s (4 Tokens/Visit)', 'promote_duration_60')
+  .row()
+  .text('⏱ 90s (6 Tokens/Visit)', 'promote_duration_90')
+  .text('⏱ 120s (8 Tokens/Visit)', 'promote_duration_120')
+  .row()
+  .text('🔙 Back', 'nav_main');
+
+/**
  * Promote Website: Select Visits
  */
 export const promoteVisitsInlineKeyboard = new InlineKeyboard()
-  .text('50', 'promote_visits_50')
-  .text('100', 'promote_visits_100')
+  .text('10 Visits', 'promote_visits_10')
+  .text('25 Visits', 'promote_visits_25')
   .row()
-  .text('500', 'promote_visits_500')
-  .text('1,000', 'promote_visits_1000')
+  .text('50 Visits', 'promote_visits_50')
+  .text('100 Visits', 'promote_visits_100')
   .row()
-  .text('5,000', 'promote_visits_5000')
+  .text('500 Visits', 'promote_visits_500')
+  .text('1,000 Visits', 'promote_visits_1000')
   .row()
   .text('🔙 Back', 'nav_main');
 
@@ -120,13 +136,52 @@ export const myCampaignsInlineKeyboard = (campaigns: Campaign[]) => {
 /**
  * Earn Credits Hub Inline Keyboard
  */
-export const earnCreditsInlineKeyboard = new InlineKeyboard()
-  .text('🌐 Traffic Tasks', 'nav_traffic')
-  .text('👥 Referral', 'nav_referral')
-  .row()
-  .text('🎁 Daily Bonus', 'nav_daily_bonus')
-  .row()
-  .text('🔙 Back', 'nav_main');
+export const earnCreditsInlineKeyboard = () => {
+  const miniappUrl = `${config.APP_URL}/miniapp`;
+  const kbSyst = new InlineKeyboard();
+
+  // Mini App webApp button + bot ad button
+  if (config.APP_URL.startsWith('https://')) {
+    kbSyst.webApp('📱 Watch Monetag Ads (Mini App)', miniappUrl).row();
+  } else {
+    kbSyst.text('📺 Watch Monetag Ads (+5 Credits)', 'nav_monetag_ads').row();
+  }
+
+  kbSyst
+    .text('🌐 Traffic Tasks', 'nav_traffic')
+    .text('👥 Referral', 'nav_referral')
+    .row()
+    .text('🎁 Daily Bonus', 'nav_daily_bonus')
+    .text('📺 Monetag Ads', 'nav_monetag_ads')
+    .row()
+    .text('🔙 Back', 'nav_main');
+
+  return kbSyst;
+};
+
+/**
+ * Monetag Ads Hub Inline Keyboard
+ */
+export const monetagAdsInlineKeyboard = (miniappUrl?: string) => {
+  const url = miniappUrl || `${config.APP_URL}/miniapp`;
+  const kb = new InlineKeyboard();
+
+  if (url.startsWith('https://')) {
+    kb.webApp('🚀 Open Mini App (Watch & Earn)', url).row();
+  } else {
+    kb.url('🚀 Open Web Mini App', url).row();
+  }
+
+  if (config.MONETAG_DIRECT_LINK) {
+    kb.url('🎬 Watch Direct Monetag Ad', config.MONETAG_DIRECT_LINK).row();
+  }
+
+  kb.text('✅ Claim Ad Reward (+5 Credits)', 'monetag_claim_reward')
+    .row()
+    .text('🔙 Back to Earn Menu', 'nav_earn');
+
+  return kb;
+};
 
 /**
  * Daily Bonus Claim Inline Keyboard
@@ -142,7 +197,7 @@ export const dailyBonusInlineKeyboard = new InlineKeyboard()
 export const buyPackagesInlineKeyboard = (packages: CreditPackage[]) => {
   const kb = new InlineKeyboard();
   packages.forEach((pkg) => {
-    kb.text(`${pkg.badge} ${pkg.name} (${pkg.credits.toLocaleString()}) — ৳${pkg.price}`, `buy_pkg_${pkg.packageId}`).row();
+    kb.text(`${pkg.badge || '📦'} ${pkg.name} (${(pkg.credits ?? 0).toLocaleString()}) — ৳${pkg.price}`, `buy_pkg_${pkg.packageId}`).row();
   });
   kb.text('🔙 Back', 'nav_main');
   return kb;

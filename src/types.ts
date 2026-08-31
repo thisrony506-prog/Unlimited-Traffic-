@@ -59,6 +59,7 @@ export type TransactionType =
   | 'signup_bonus'
   | 'daily_bonus'
   | 'traffic_reward'
+  | 'monetag_ad_reward'
   | 'referral_reward'
   | 'campaign_create'
   | 'package_purchase'
@@ -149,12 +150,15 @@ export interface UserSessionState {
   step:
     | 'idle'
     | 'promote_enter_url'
+    | 'promote_select_duration'
     | 'promote_select_visits'
     | 'promote_confirm'
     | 'payment_select_method'
     | 'payment_enter_trxid'
     | 'support_enter_message';
   promoteUrl?: string;
+  promoteDurationSeconds?: number;
+  promoteCostPerVisit?: number;
   promoteVisits?: number;
   selectedPackage?: CreditPackage;
   paymentMethod?: PaymentMethod;

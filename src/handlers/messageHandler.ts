@@ -23,6 +23,26 @@ export const handleIncomingMessage = async (ctx: Context) => {
     return;
   }
 
+  // 1.1 Custom Duration (Seconds) typed
+  if (session.step === 'promote_select_duration') {
+    const rawSeconds = parseInt(text.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(rawSeconds) && rawSeconds >= 5) {
+      const { handlePromoteDurationSelected } = await import('./promoteHandler');
+      await handlePromoteDurationSelected(ctx, rawSeconds);
+      return;
+    }
+  }
+
+  // 1.2 Custom Promote Visits Number typed
+  if (session.step === 'promote_select_visits') {
+    const visitsNum = parseInt(text.replace(/,/g, ''), 10);
+    if (!isNaN(visitsNum) && visitsNum > 0) {
+      const { handlePromoteVisitsSelected } = await import('./promoteHandler');
+      await handlePromoteVisitsSelected(ctx, visitsNum);
+      return;
+    }
+  }
+
   // 2. Payment TrxID
   if (session.step === 'payment_enter_trxid') {
     await handlePaymentTrxIdReceived(ctx, text);

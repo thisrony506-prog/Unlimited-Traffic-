@@ -78,12 +78,12 @@ export const handleCampaignDetailCallback = async (ctx: Context, campaignId: str
     `Campaign ID: \`${campaign.campaignId}\`\n` +
     `🌐 Website: \`${campaign.websiteUrl}\`\n` +
     `Status: ${statusEmoji}\n\n` +
-    `👁️ *Progress:* ${campaign.completedVisits.toLocaleString()} / ${campaign.requiredVisits.toLocaleString()} visits\n` +
-    `⏳ *Remaining:* ${campaign.remainingVisits.toLocaleString()} visits\n` +
-    `⏱ *Stay Duration:* ${campaign.minimumVisitSeconds} seconds\n` +
-    `🎁 *Reward Per Visit:* ${campaign.rewardPerVisit} Credit\n` +
-    `💳 *Total Cost:* ${campaign.cost.toLocaleString()} Credits\n\n` +
-    `Created: ${new Date(campaign.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    `👁️ *Progress:* ${(campaign.completedVisits ?? 0).toLocaleString()} / ${(campaign.requiredVisits ?? 0).toLocaleString()} visits\n` +
+    `⏳ *Remaining:* ${(campaign.remainingVisits ?? 0).toLocaleString()} visits\n` +
+    `⏱ *Stay Duration:* ${campaign.minimumVisitSeconds || 20} seconds\n` +
+    `🎁 *Reward Per Visit:* ${campaign.rewardPerVisit || 1} Credit\n` +
+    `💳 *Total Cost:* ${(campaign.cost ?? 0).toLocaleString()} Credits\n\n` +
+    `Created: ${new Date(campaign.createdAt || Date.now()).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, {

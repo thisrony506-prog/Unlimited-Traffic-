@@ -1,8 +1,15 @@
 import { Context } from 'grammy';
 import { db } from '../database/db';
-import { earnCreditsInlineKeyboard, dailyBonusInlineKeyboard, backToMainInlineKeyboard } from '../keyboards';
+import { config } from '../config/env';
+import {
+  earnCreditsInlineKeyboard,
+  monetagAdsInlineKeyboard,
+  dailyBonusInlineKeyboard,
+  backToMainInlineKeyboard,
+} from '../keyboards';
 import {
   formatEarnCreditsHub,
+  formatMonetagAdsScreen,
   formatDailyBonusScreen,
   formatDailyBonusClaimed,
 } from '../utils/formatters';
@@ -11,16 +18,92 @@ export const handleEarnHub = async (ctx: Context) => {
   if (!ctx.from) return;
 
   const text = formatEarnCreditsHub();
+  const kb = earnCreditsInlineKeyboard();
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, {
       parse_mode: 'Markdown',
-      reply_markup: earnCreditsInlineKeyboard,
+      reply_markup: kb,
     });
   } else {
     await ctx.reply(text, {
       parse_mode: 'Markdown',
-      reply_markup: earnCreditsInlineKeyboard,
+      reply_markup: kb,
+    });
+  }
+};
+
+export const handleMonetagAdsScreen = async (ctx: Context) => {
+  if (!ctx.from) return;
+
+  const telegramId = ctx.from.id;
+  const user = db.getUser(telegramId);
+  const balance = user?.balance || 0;
+  const stats = db.getMonetagStats(telegramId);
+
+  const text = formatMonetagAdsScreen(
+    stats.adsWatchedToday,
+    stats.dailyLimit,
+    stats.remainingToday,
+    stats.rewardPerAd,
+    balance
+  );
+
+  const kb = monetagAdsInlineKeyboard(`${config.APP_URL}/miniapp?user_id=${telegramId}`);
+
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(text, {
+      parse_mode: 'Markdown',
+      reply_markup: kb,
+    });
+  } else {
+    await ctx.reply(text, {
+      parse_mode: 'Markdown',
+      reply_markup: kb,
+    });
+  }
+};
+
+export const handleMonetagClaimRewardCallback = async (ctx: Context) => {
+  if (!ctx.from) return;
+
+  const telegramId = ctx.from.id;
+  const claimRes = db.claimMonetagAdReward(telegramId, 'smartlink');
+
+  if (!claimRes.success) {
+    await ctx.answerCallbackQuery({
+      text: claimRes.error || 'Daily limit reached!',
+      show_alert: true,
+    });
+    return;
+  }
+
+  await ctx.answerCallbackQuery({
+    text: `🎉 +${claimRes.amount} Credits added from Monetag Ad!`,
+  });
+
+  const stats = db.getMonetagStats(telegramId);
+  const user = db.getUser(telegramId);
+  const balance = user?.balance || 0;
+
+  const text =
+    `🎉 *Monetag Ad Reward Credited!*\n\n` +
+    `🎁 *+${claimRes.amount} Credits* added to your balance.\n` +
+    `💰 *New Balance:* ${balance} Credits\n` +
+    `📊 *Today's Ads:* ${stats.adsWatchedToday} / ${stats.dailyLimit}\n\n` +
+    `Watch more ads or launch the Mini App to continue earning!`;
+
+  const kb = monetagAdsInlineKeyboard(`${config.APP_URL}/miniapp?user_id=${telegramId}`);
+
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(text, {
+      parse_mode: 'Markdown',
+      reply_markup: kb,
+    });
+  } else {
+    await ctx.reply(text, {
+      parse_mode: 'Markdown',
+      reply_markup: kb,
     });
   }
 };

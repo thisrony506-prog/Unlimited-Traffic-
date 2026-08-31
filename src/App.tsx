@@ -21,7 +21,10 @@ import {
   Info,
   Clock,
   Check,
+  Tv,
+  Smartphone,
 } from 'lucide-react';
+import { MiniAppView } from './components/MiniAppView';
 
 interface SimulatedMessage {
   id: string;
@@ -33,6 +36,7 @@ interface SimulatedMessage {
 }
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'bot' | 'miniapp'>('bot');
   const [botStatus, setBotStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
@@ -173,11 +177,13 @@ export default function App() {
               });
             });
             if (visitId) {
+              const match = resp.text.match(/Required time:\*?\s*(\d+)/i) || resp.text.match(/(\d+)\s*seconds/i);
+              const durationSecs = match ? parseInt(match[1], 10) : 20;
               setActiveVisitTimer({
                 visitId,
                 url: targetUrl,
-                secondsLeft: 20,
-                totalSeconds: 20,
+                secondsLeft: durationSecs,
+                totalSeconds: durationSecs,
               });
             }
           }
@@ -316,10 +322,51 @@ export default function App() {
       </header>
 
       {/* Main Telegram App View Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col">
-        {/* Telegram Chat Mockup */}
-        <div className="flex-1 flex flex-col bg-slate-900/90 rounded-2xl border border-slate-800/90 shadow-2xl overflow-hidden min-h-[680px]">
-          {/* Telegram Header */}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col space-y-3">
+        {/* Navigation Tabs between Bot Engine and Mini App */}
+        <div className="flex items-center justify-between bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setActiveTab('bot')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'bot'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <BotIcon className="w-4 h-4" />
+              🤖 Telegram Bot Chat
+            </button>
+            <button
+              onClick={() => setActiveTab('miniapp')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'miniapp'
+                  ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Smartphone className="w-4 h-4 text-indigo-400" />
+              📱 Telegram Mini App (Monetag Ads)
+              <span className="bg-amber-400/20 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono">
+                Earn +5
+              </span>
+            </button>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 pr-2">
+            <Tv className="w-3.5 h-3.5 text-amber-400" />
+            <span>Monetag Zone: <code className="text-cyan-300 font-mono">8839201</code></span>
+          </div>
+        </div>
+
+        {activeTab === 'miniapp' ? (
+          <div className="py-2">
+            <MiniAppView onBackToBot={() => setActiveTab('bot')} />
+          </div>
+        ) : (
+          /* Telegram Chat Mockup */
+          <div className="flex-1 flex flex-col bg-slate-900/90 rounded-2xl border border-slate-800/90 shadow-2xl overflow-hidden min-h-[680px]">
+            {/* Telegram Header */}
           <div className="bg-slate-800/95 px-4 py-3 flex items-center justify-between border-b border-slate-700/80">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -392,13 +439,25 @@ export default function App() {
                         <div key={rIdx} className="flex flex-wrap gap-1.5">
                           {row.map((btn, bIdx) => {
                             if (btn.url) {
+                              if (btn.url.includes('/miniapp')) {
+                                return (
+                                  <button
+                                    key={bIdx}
+                                    onClick={() => setActiveTab('miniapp')}
+                                    className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 rounded-xl shadow-md transition-all active:scale-95"
+                                  >
+                                    <Smartphone className="w-3.5 h-3.5" />
+                                    {btn.text}
+                                  </button>
+                                );
+                              }
                               return (
                                 <a
                                   key={bIdx}
                                   href={btn.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-cyan-300 bg-slate-900/80 hover:bg-slate-900 hover:text-white rounded-xl border border-cyan-500/30 transition shadow-sm hover:border-cyan-400"
+                                  className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-cyan-300 bg-slate-900/90 hover:bg-slate-800 hover:text-white rounded-xl border border-cyan-500/40 transition shadow-sm hover:border-cyan-400"
                                 >
                                   {btn.text}
                                   <ExternalLink className="w-3 h-3 opacity-70" />
@@ -413,7 +472,7 @@ export default function App() {
                                     sendTelegramUpdate('', btn.callback_data);
                                   }
                                 }}
-                                className="flex-1 min-w-[120px] inline-flex items-center justify-center px-3 py-2 text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-700 hover:text-white rounded-xl border border-slate-700/70 hover:border-slate-600 transition shadow-sm active:scale-95"
+                                className="flex-1 min-w-[120px] inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-slate-100 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl border border-slate-600/70 hover:border-slate-500 transition shadow-sm active:scale-95"
                               >
                                 {btn.text}
                               </button>
@@ -574,21 +633,64 @@ export default function App() {
             </form>
           </div>
         </div>
+        )}
 
         {/* Telegram Bot Live Production Setup Guide Card */}
-        <div className="mt-4 p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300 space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="font-semibold text-slate-200 flex items-center gap-2">
-              <Info className="w-4 h-4 text-cyan-400" /> Real Telegram Bot Webhook & Production Details
+              <Info className="w-4 h-4 text-cyan-400" /> Real Telegram Connection & Status
             </div>
-            <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              Webhook Ready
-            </span>
+            <div className="flex items-center gap-2">
+              {botStatus?.bot?.isPolling ? (
+                <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Long Polling Active (Listening live)
+                </span>
+              ) : botStatus?.webhook?.currentUrl ? (
+                <span className="text-[11px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                  Webhook Mode Active
+                </span>
+              ) : (
+                <span className="text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  Engine Ready
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div className="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800/80">
-              <div className="text-slate-400 font-medium mb-1">Telegram Webhook URL:</div>
+            <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 font-medium">Telegram Bot Status:</span>
+                <span className="text-cyan-300 font-bold">@{botStatus?.bot?.username || 'InfiniteHits_bot'}</span>
+              </div>
+              <div className="text-[11px] text-slate-400">
+                {botStatus?.bot?.isPolling
+                  ? 'বটটি Telegram Long Polling এর মাধ্যমে চালু আছে এবং মেসেজের সাথে সাথে স্বয়ংক্রিয়ভাবে রেসপন্স করবে।'
+                  : botStatus?.bot?.pollingError
+                  ? `Notice: ${botStatus.bot.pollingError}`
+                  : 'Bot engine is running and ready for updates.'}
+              </div>
+              <div className="pt-1 flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/telegram/start-polling', { method: 'POST' });
+                      fetchStatus();
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg transition active:scale-95 shadow-sm"
+                >
+                  🔄 Restart Long Polling
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800/80 space-y-2">
+              <div className="text-slate-400 font-medium">Telegram Webhook Endpoint:</div>
               <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-cyan-300 bg-slate-900 p-1.5 rounded border border-slate-800">
                 <span className="truncate">{botStatus?.webhook?.endpoint || 'https://.../api/telegram/webhook'}</span>
                 <button
@@ -599,12 +701,8 @@ export default function App() {
                   {copiedLink ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
-            </div>
-
-            <div className="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800/80">
-              <div className="text-slate-400 font-medium mb-1">Environment Token:</div>
-              <div className="text-[11px] text-slate-300">
-                Set <code className="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">TELEGRAM_BOT_TOKEN</code> in your Settings / .env to bind to your live Telegram bot handle.
+              <div className="text-[10px] text-slate-400">
+                Environment: <code className="text-amber-300">TELEGRAM_BOT_TOKEN</code> configured.
               </div>
             </div>
           </div>
